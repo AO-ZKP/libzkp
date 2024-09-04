@@ -2,3 +2,6 @@
 
 codebase.md
 main
+
+groth16_wasm*
+*.wasm
