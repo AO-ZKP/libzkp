@@ -5,3 +5,5 @@ main
 
 groth16_wasm*
 *.wasm
+node_modules/
+.env
