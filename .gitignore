@@ -3,5 +3,7 @@
 codebase.md
 main
 
-groth16_wasm*
+node_modules/
+.env
+.DS_Store
 *.wasm
