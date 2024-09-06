@@ -7,9 +7,6 @@ const lualib = fengari.lualib;
 const rust_adder = require('./pkg/groth16_wasm.js');
 
 async function main() {
-
-    // If neither of the above worked, the module might already be initialized
-
     // Create a new Lua state
     const L = lauxlib.luaL_newstate();
     
@@ -20,7 +17,7 @@ async function main() {
     lua.lua_pushcfunction(L, (L) => {
         const a = lauxlib.luaL_checkinteger(L, 1);
         const b = lauxlib.luaL_checkinteger(L, 2);
-        const result = rust_adder.add_numbers(a, b);
+        const result = rust_adder.add_numbers(BigInt(a), BigInt(b));
         lua.lua_pushinteger(L, result);
         return 1;
     });

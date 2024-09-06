@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build the Rust library
-./build-rust.sh
+./rust-build.sh
 
 # Compile C code with Rust library to WebAssembly
 emcc -o groth16.js groth16_wasm.c \
