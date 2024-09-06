@@ -1,5 +1,10 @@
-// lib.rs
+
 #[no_mangle]
-pub extern "C" fn add_numbers(a: i64, b: i64) -> i64 {
+pub extern "C" fn add_numbers(a: i32, b: i32) -> i32 {
     a + b
+}   
+
+#[no_mangle]
+pub extern "C" fn generate_and_verify_proof() -> i32 {
+  24
 }
