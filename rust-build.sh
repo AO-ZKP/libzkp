@@ -9,3 +9,5 @@ cp target/wasm64-unknown-unknown/release/*.wasm ./bin
 cbindgen  --crate groth16_wasm --output include/groth16_wasm.h # --config cbindgen.toml 
 
 wasm-bindgen target/wasm64-unknown-unknown/release/groth16_wasm.wasm --out-dir ./pkg  --target nodejs
+
+node  --experimental-wasm-memory64 index.js
