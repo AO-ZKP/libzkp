@@ -6,7 +6,7 @@ cargo +nightly build -Zbuild-std=std,panic_unwind,panic_abort --target=wasm64-un
 rm -rf bin include pkg        
 mkdir -p bin include pkg
 cp target/wasm64-unknown-unknown/release/*.wasm ./bin
-# cp target/wasm64-unknown-unknown/release/*.a ./bin
+cp target/wasm64-unknown-unknown/release/*.a ./bin
 
 rustup run nightly cbindgen  --crate groth16_wasm --output include/groth16_wasm.h # --config cbindgen.toml 
 
