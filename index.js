@@ -5,12 +5,13 @@ const lualib = fengari.lualib;
 
 // Import the WASM module
 const groth16_wasm = require('./pkg/groth16_wasm.js');
+console.log("\n\n         ***************STARTING TEST FOR GROTH16***************");
 
 function main() {
     // Access the WASM exports directly
     const wasm = groth16_wasm.__wasm;
 
-    console.log("WebAssembly exports:", Object.keys(wasm));
+    console.log("\nWebAssembly exports:", Object.keys(wasm));
 
     // Create a new Lua state
     const L = lauxlib.luaL_newstate();
@@ -18,22 +19,55 @@ function main() {
     // Load Lua standard libraries
     lualib.luaL_openlibs(L);
 
-    // Define a Lua function that uses our WASM function
+    // Define the groth16 module
+    const groth16Module = `
+    local M = {}
+    
+    function M.wasm_test()
+        return js_wasm_test()
+    end
+    
+    return M
+    `;
+
+    // Register the WASM function in Lua
     lua.lua_pushcfunction(L, (L) => {
-        const a = lauxlib.luaL_checkinteger(L, 1);
-        const b = lauxlib.luaL_checkinteger(L, 2);
-        console.log("Inputs:", a, b);
-        const result = wasm.add_numbers(Number(a), Number(b));
-        console.log("WASM result:", result);
+        console.log("\nCalling wasm_test");
+        const result = wasm.wasm_test();
+        console.log("\nWASM result:", result);
         lua.lua_pushinteger(L, result);
         return 1;
     });
-    lua.lua_setglobal(L, 'add_numbers');
+    lua.lua_setglobal(L, 'js_wasm_test');
+
+    // Register the custom require function
+    lua.lua_pushcfunction(L, (L) => {
+        const moduleName = fengari.to_jsstring(lauxlib.luaL_checkstring(L, 1));
+        if (moduleName === "groth16") {
+            // Load the module
+            if (lauxlib.luaL_loadstring(L, fengari.to_luastring(groth16Module)) !== lua.LUA_OK) {
+                return lua.lua_error(L);
+            }
+            // Call the module function
+            if (lua.lua_pcall(L, 0, 1, 0) !== lua.LUA_OK) {
+                return lua.lua_error(L);
+            }
+            return 1;
+        }
+        lua.lua_pushnil(L);
+        return 1;
+    });
+    lua.lua_setglobal(L, 'require');
 
     // Run some Lua code
     const luaCode = `
-        local result = add_numbers(5, 7)
-        print("Lua result:", result)
+        local groth16 = require("groth16")
+        local result = groth16.wasm_test()
+        if result == 2 then
+            print("\\nGroth 16 test PASSED, result:", result, "\\n")
+        else
+            print("\\nGroth 16 test FAILED, result:", result, "\\n")
+        end
     `;
 
     if (lauxlib.luaL_dostring(L, fengari.to_luastring(luaCode)) !== lua.LUA_OK) {
