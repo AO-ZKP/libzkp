@@ -310,6 +310,7 @@ dependencies = [
  "group",
  "pairing",
  "rand",
+ "rand_chacha",
  "rand_core",
  "subtle",
  "wasm-bindgen",
