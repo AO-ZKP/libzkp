@@ -24,7 +24,7 @@ function main() {
     local M = {}
     
     function M.wasm_test()
-        return js_wasm_test()
+        return wasm_test()
     end
     
     return M
@@ -38,7 +38,7 @@ function main() {
         lua.lua_pushinteger(L, result);
         return 1;
     });
-    lua.lua_setglobal(L, 'js_wasm_test');
+    lua.lua_setglobal(L, 'wasm_test');
 
     // Register the custom require function
     lua.lua_pushcfunction(L, (L) => {
