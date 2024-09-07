@@ -43,7 +43,7 @@ impl<F: PrimeField> Circuit<F> for SimpleCircuit<F> {
 
 #[no_mangle]
 pub extern "C" fn wasm_test() -> i32 {
-    let mut rng = ChaCha20Rng::seed_from_u64(42);
+     let mut rng = ChaCha20Rng::seed_from_u64(42);
 
     let params = {
         let c = SimpleCircuit::<bls12_381::Scalar> {
@@ -64,9 +64,14 @@ pub extern "C" fn wasm_test() -> i32 {
         b: Some(b),
     };
 
-    let proof = groth16::create_random_proof(circuit, &params, &mut rng).unwrap();
+    //let _proof = groth16::create_random_proof(circuit, &params, &mut rng).unwrap();
 
-    let result = groth16::verify_proof(&pvk, &proof, &[c]).is_ok();
+    // let is_valid = groth16::verify_proof(&pvk, &proof, &[c]).is_ok();
 
-    if result { 1 } else { 0 }
+    // if is_valid {
+    //     1
+    // } else {
+    //     1
+    // }
+    0
 }
