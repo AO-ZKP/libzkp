@@ -3,6 +3,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int32_t add_numbers(int32_t aA, int32_t aB);
+#define WASM64_MIMC_ROUNDS 322
 
-int32_t generate_and_verify_proof(void);
+int32_t add_numbers(int32_t aA, int32_t aB);
