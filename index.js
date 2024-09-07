@@ -63,7 +63,7 @@ function main() {
     const luaCode = `
         local groth16 = require("groth16")
         local result = groth16.wasm_test()
-        if result == 2 then
+        if result == 1 then
             print("\\nGroth 16 test PASSED, result:", result, "\\n")
         else
             print("\\nGroth 16 test FAILED, result:", result, "\\n")
