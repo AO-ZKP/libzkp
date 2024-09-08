@@ -7,14 +7,15 @@
 
 # build command for wasm64
 # Ensure you have the nightly toolchain installed
-rustup toolchain install nightly
+#rustup toolchain install nightly
 
 # Add the wasm64-unknown-unknown target
-rustup target add wasm64-unknown-unknown --toolchain nightly
+#rustup target add wasm64-unknown-unknown --toolchain nightly
 
 ## ignore the error after this, the rustup is retarded
 
-cargo +nightly build --target wasm64-unknown-unknown --release -Z build-std=panic_abort,std
+RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
+cargo +nightly build -Zbuild-std=std,panic_unwind,panic_abort --target=wasm64-unknown-unknown --release -Zbuild-std-features=panic_immediate_abort
 
 # The resulting wasm file will be in target/wasm64-unknown-unknown/release/libgroth16_wasm.a
 cp target/wasm64-unknown-unknown/release/libgroth16_wasm.a ./bin/
