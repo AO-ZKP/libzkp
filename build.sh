@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm -rf bin include pkg
+rm -rf bin pkg
 mkdir -p bin include pkg
 
 RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
@@ -12,7 +12,7 @@ cargo +nightly build -Zbuild-std=std,panic_unwind,panic_abort --target=wasm64-un
 
 
 
-rustup run nightly cbindgen  --crate groth16_wasm --output include/groth16_wasm.h # --config cbindgen.toml 
+#rustup run nightly cbindgen  --crate groth16_wasm --output include/groth16_wasm.h # --config cbindgen.toml 
 
 rustup run nightly wasm-bindgen target/wasm64-unknown-unknown/release/groth16_wasm.wasm --out-dir ./pkg  --target nodejs
 
@@ -29,4 +29,13 @@ cp target/wasm64-unknown-unknown/release/*.a ./bin
 
 node --experimental-wasm-memory64 index.js
 
+# ../ao-c-test/groth16_wasm.h
 
+rm  ../ao/dev-cli/container/src/groth16/libgroth16_wasm.a  
+
+#cp include/groth16_wasm.h ../ao-c-test/
+
+cp bin/*.a ../ao/dev-cli/container/src/groth16
+#cp include/* ../ao/dev-cli/container/src/groth16
+
+emcc groth16_wasm.c -L./bin -lgroth16_wasm -I./include -lm -s WASM=1 -s MEMORY64=1 -s SUPPORT_LONGJMP=1  -o libgroth16.a 

@@ -1,6 +1,14 @@
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
+#ifndef GROTH16_WASM_H
+#define GROTH16_WASM_H
 
-int32_t wasm_test(void);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int wasm_test(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // GROTH16_WASM_H
