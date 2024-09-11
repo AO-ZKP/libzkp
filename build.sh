@@ -4,7 +4,7 @@ rm -rf bin pkg
 mkdir -p bin include pkg
 
 RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
-cargo +nightly build -Zbuild-std=std,panic_unwind,panic_abort --target=wasm64-unknown-unknown --release -Zbuild-std-features=panic_immediate_abort
+cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm64-unknown-unknown --release # -Zbuild-std-features=panic_immediate_abort
 
 #wasm-opt target/wasm64-unknown-unknown/release/groth16_wasm.wasm -O4 -o target/wasm64-unknown-unknown/release/groth16_wasm.wasm
 #cargo build --target=wasm32-unknown-unknown --release
