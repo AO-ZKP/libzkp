@@ -117,12 +117,14 @@ name = "groth16_wasm"
 version = "0.1.0"
 dependencies = [
  "getrandom",
+ "lambdaworks-circom-adapter",
  "lambdaworks-groth16",
  "lambdaworks-math",
  "rand",
  "rand_chacha",
  "serde",
  "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -150,9 +152,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "lambdaworks-circom-adapter"
+version = "0.10.0"
+source = "git+https://github.com/lambdaclass/lambdaworks.git#8133ae54c7ebf3d340076e182f5184ad7fb6e2e1"
+dependencies = [
+ "lambdaworks-groth16",
+ "lambdaworks-math",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "lambdaworks-crypto"
 version = "0.10.0"
-source = "git+https://github.com/lambdaclass/lambdaworks.git#3795dbc6368d50a29e987ce9dea2944c7022e1c8"
+source = "git+https://github.com/lambdaclass/lambdaworks.git#8133ae54c7ebf3d340076e182f5184ad7fb6e2e1"
 dependencies = [
  "lambdaworks-math",
  "sha2",
@@ -162,7 +175,7 @@ dependencies = [
 [[package]]
 name = "lambdaworks-groth16"
 version = "0.10.0"
-source = "git+https://github.com/lambdaclass/lambdaworks.git#3795dbc6368d50a29e987ce9dea2944c7022e1c8"
+source = "git+https://github.com/lambdaclass/lambdaworks.git#8133ae54c7ebf3d340076e182f5184ad7fb6e2e1"
 dependencies = [
  "lambdaworks-crypto",
  "lambdaworks-math",
@@ -175,7 +188,7 @@ dependencies = [
 [[package]]
 name = "lambdaworks-math"
 version = "0.10.0"
-source = "git+https://github.com/lambdaclass/lambdaworks.git#3795dbc6368d50a29e987ce9dea2944c7022e1c8"
+source = "git+https://github.com/lambdaclass/lambdaworks.git#8133ae54c7ebf3d340076e182f5184ad7fb6e2e1"
 dependencies = [
  "rayon",
  "serde",
@@ -361,9 +374,9 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
+checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
 
 [[package]]
 name = "version_check"
