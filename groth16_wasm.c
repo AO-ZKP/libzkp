@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include "groth16_wasm.h"
 #include "groth16.h"
-#include <emscripten.h>
+// #include <emscripten.h>
 
 
-EMSCRIPTEN_KEEPALIVE
-int groth16() {
+// EMSCRIPTEN_KEEPALIVE
+int main() {
     int result = wasm_test();
     
     if (result == 1) {

@@ -8,10 +8,16 @@ const groth16_wasm = require('./pkg/groth16_wasm.js');
 console.log("\n\n         *************** STARTING TEST FOR GROTH16 ***************");
 
 function main() {
+    
+
     // Access the WASM exports directly
     const wasm = groth16_wasm.__wasm;
 
     console.log("\nWebAssembly exports:", Object.keys(wasm));
+
+
+
+
 
     // Create a new Lua state
     const L = lauxlib.luaL_newstate();

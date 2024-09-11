@@ -38,4 +38,4 @@ rm  ../ao/dev-cli/container/src/groth16/libgroth16_wasm.a
 cp bin/*.a ../ao/dev-cli/container/src/groth16
 #cp include/* ../ao/dev-cli/container/src/groth16
 
-emcc groth16_wasm.c -L./bin -lgroth16_wasm -I./include -lm -s WASM=1 -s MEMORY64=1 -s SUPPORT_LONGJMP=1  -o libgroth16.a 
+cd ../ao/dev-cli/container/ && ./build.sh
