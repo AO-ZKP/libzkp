@@ -6,3 +6,5 @@ main
 node_modules/
 .env
 .DS_Store
+
+temp-obj
