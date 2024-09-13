@@ -39,7 +39,7 @@ function main() {
     // Register the WASM function in Lua
     lua.lua_pushcfunction(L, (L) => {
         console.log("\nCalling wasm_test");
-        const result = wasm.wasm_test();
+        const result = wasm.rust_test();
         console.log("\nWASM result:", result);
         lua.lua_pushinteger(L, result);
         return 1;

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-int groth(void);
+int groth16_test(void);
 
 #ifdef __cplusplus
 }
