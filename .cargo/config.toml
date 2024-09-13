@@ -1,5 +1,33 @@
-[build]
-target = ["wasm64-unknown-unknown"]
+# config.toml for Rust
+
+[llvm]
+# Enable the WebAssembly target
+wasm32-unknown-unknown = true
+
 
 [rust]
-lld = true
+# Enable the WebAssembly backend
+wasm = true
+
+[target.wasm32-unknown-unknown]
+# Specify the linker to use
+linker = "lld"
+
+# If you're using wasm32-wasip1, you might also want:
+[target.wasm32-wasip1]
+linker = "lld"
+
+
+# If you're using wasm32-unknown-emscripten, you might also want:
+[target.wasm32-unknown-emscripten]
+linker = "lld"
+
+# Build commands:
+# 1. Configure and build Rust with WebAssembly support:
+#    ./x.py build --target wasm32-unknown-unknown
+
+# 2. Build LLD:
+#    ./x.py build src/tools/lld
+
+# 3. Compile your Rust project:
+#    cargo +nightly build -Zwasm-c-abi=on --target wasm32-wasip1 --release

@@ -123,6 +123,7 @@ dependencies = [
  "rand_chacha",
  "serde",
  "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]

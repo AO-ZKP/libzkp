@@ -3,6 +3,7 @@ use lambdaworks_groth16::{
     setup, verify, Prover,
     QuadraticArithmeticProgram as QAP,
 };
+use wasm_bindgen::prelude::*;
 
 // Define the Vitalik QAP (x^3 + x + 5 = 35)
 fn vitalik_qap() -> QAP {
