@@ -38,7 +38,7 @@ fn vitalik_qap() -> QAP {
 }
 
 #[no_mangle]
-pub extern "C" fn wasm_test() -> i32 {
+pub extern "C" fn rust_test() -> i32 {
     // Set up the QAP
     let qap = vitalik_qap();
 

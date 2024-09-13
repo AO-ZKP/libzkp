@@ -1,11 +1,1 @@
 language = "C"
-
-[defines]
-"target_arch = \"wasm64\"" = "__wasm64__"
-
-[export]
-include = ["add"]
-prefix = "WASM64_"
-
-[fn]
-rename_args = "GeckoCase"
