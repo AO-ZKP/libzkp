@@ -1,5 +1,6 @@
 
 let imports = {};
+imports['wasi_snapshot_preview1'] = require('wasi_snapshot_preview1');
 let wasm;
 
 const path = require('path').join(__dirname, 'groth16_wasm_bg.wasm');

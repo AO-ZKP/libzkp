@@ -41,7 +41,7 @@ fn vitalik_qap() -> QAP {
 pub extern "C" fn rust_test() -> i32 {
     // Set up the QAP
     let qap = vitalik_qap();
-
+    println!("QAP is set up");
     // Generate proving and verifying keys
     let (pk, vk) = setup(&qap);
 

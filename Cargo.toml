@@ -7,14 +7,10 @@ edition = "2021"
 crate-type = ["cdylib","staticlib"]
 
 [dependencies]
-lambdaworks-groth16 = { git = "https://github.com/lambdaclass/lambdaworks.git" }
-lambdaworks-math = { git = "https://github.com/lambdaclass/lambdaworks.git" }
-rand_chacha = "0.3.1"
-serde = { version = "1.0", features = ["derive"] }
+lambdaworks-groth16 = { path = "../lambdaworks/provers/groth16" }
+lambdaworks-math = { path = "../lambdaworks/math" }
 serde_json = "1.0"
-rand = "0.8.5"
-getrandom = { version = "0.2", features = ["js"] }
-mlua = {version = "*", features = ["luajit", "vendored", "module", "async", "send", "serialize", "macros"]}
+#mlua = {version = "*", features = ["luajit", "vendored", "module", "async", "send", "serialize", "macros"]}
 
 [profile.release]
 debug = true
