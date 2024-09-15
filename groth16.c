@@ -8,3 +8,7 @@ int groth16_test(){
     int result = rust_test();
     return result;
 }
+
+// Add this line to ensure the runtime is initialized
+EMSCRIPTEN_KEEPALIVE
+int main() { return 0; }
