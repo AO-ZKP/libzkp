@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "groth16_wasm.h"
+#include "zkp.h"
 
 int main() {
     printf("Hello from C!\n");

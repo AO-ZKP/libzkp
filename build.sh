@@ -4,7 +4,7 @@
 ./build-rust.sh
 
 # Compile C code with Rust library to WebAssembly
-emcc -o groth16.js groth16_wasm.c \
+emcc -o groth16.js zkp.c \
     -L ./bin -I ./include \
     -s WASM=1 \
     -s EXPORTED_FUNCTIONS='["_main"]' \
@@ -12,7 +12,7 @@ emcc -o groth16.js groth16_wasm.c \
     -s ENVIRONMENT='node' \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s INITIAL_MEMORY=16MB \
-    --preload-file bin/groth16_wasm.wasm \
+    --preload-file bin/zkp.wasm \
     -lm
 
 echo "Build complete. Run 'node groth16.js' to execute the program."
