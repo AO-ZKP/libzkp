@@ -113,21 +113,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zkp"
-version = "0.1.0"
-dependencies = [
- "getrandom",
- "lambdaworks-circom-adapter",
- "lambdaworks-groth16",
- "lambdaworks-math",
- "rand",
- "rand_chacha",
- "serde",
- "serde_json",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -464,4 +449,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "zkp"
+version = "0.1.0"
+dependencies = [
+ "getrandom",
+ "lambdaworks-circom-adapter",
+ "lambdaworks-groth16",
+ "lambdaworks-math",
+ "rand",
+ "rand_chacha",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
 ]
