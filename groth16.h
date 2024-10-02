@@ -3,7 +3,7 @@
 // #include <lua.h>
 // #include <lualib.h>
 // #include <lauxlib.h>
-#include "groth16_wasm.h"
+#include "zkp.h"
 
 // int luaopen_groth16(lua_State *L);
 int wasm_test(void);

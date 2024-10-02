@@ -4,14 +4,14 @@ const lauxlib = fengari.lauxlib;
 const lualib = fengari.lualib;
 
 // Import the WASM module
-const groth16_wasm = require('./pkg/groth16_wasm.js');
+const zkp = require('./pkg/zkp.js');
 console.log("\n\n         *************** STARTING TEST FOR GROTH16 ***************");
 
 function main() {
     
 
     // Access the WASM exports directly
-    const wasm = groth16_wasm.__wasm;
+    const wasm = zkp.__wasm;
 
     console.log("\nWebAssembly exports:", Object.keys(wasm));
 
