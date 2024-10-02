@@ -6,7 +6,7 @@
 # cp target/release/*.a ./bin
 
 
-emcc -o groth16.js groth16.c -L./bin -l:libgroth16_wasm.a -I./include -lm \
+emcc -o groth16.js groth16.c -L./bin -l:libzkp.a -I./include -lm \
     -s MEMORY64=1 \
     -s ENVIRONMENT=node \
     -s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]' \
