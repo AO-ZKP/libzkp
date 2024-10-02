@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "groth16_wasm.h"
+#include "zkp.h"
 #include "groth16.h"
 #include <emscripten.h>
 

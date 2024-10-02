@@ -1,7 +1,7 @@
 local ffi = require("ffi")
 
 -- Load the Rust library
-local lib = ffi.load("bin/libgroth16_wasm.so")  -- Adjust the path and filename as needed
+local lib = ffi.load("bin/libzkp.so")  -- Adjust the path and filename as needed
 
 -- Define the C function signature
 ffi.cdef[[
