@@ -7,3 +7,8 @@ groth16_wasm*
 *.wasm
 node_modules/
 .env
+node_modules/
+.env
+.DS_Store
+
+temp-obj/
