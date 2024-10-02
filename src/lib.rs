@@ -1,7 +1,5 @@
-use lambdaworks_groth16::{
-    common::FrElement,
-    setup, verify, Prover,
-    QuadraticArithmeticProgram as QAP,
+se lambdaworks_groth16::{
+    common::FrElement, setup, verify, Prover, QuadraticArithmeticProgram as QAP,
 };
 
 // Define the Vitalik QAP (x^3 + x + 5 = 35)
@@ -56,13 +54,12 @@ pub extern "C" fn rust_test() -> i32 {
     // Verify the proof
     let public_inputs = &w[..qap.num_of_public_inputs];
     let is_valid = verify(&vk, &proof, public_inputs);
-    
+
     // Return 1 if valid, 0 otherwise
     if is_valid {
         1
     } else {
         0
     }
-    
-    
 }
+

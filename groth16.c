@@ -5,10 +5,7 @@
 
 EMSCRIPTEN_KEEPALIVE
 int groth16_test(){
-    int result = rust_test();
+    int result = wasm_test();
     return result;
 }
 
-// Add this line to ensure the runtime is initialized
-EMSCRIPTEN_KEEPALIVE
-int main() { return 0; }
