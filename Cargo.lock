@@ -113,15 +113,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "groth16_wasm"
-version = "0.1.0"
-dependencies = [
- "lambdaworks-groth16",
- "lambdaworks-math",
- "serde_json",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -445,4 +436,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "zkp"
+version = "0.1.0"
+dependencies = [
+ "lambdaworks-groth16",
+ "lambdaworks-math",
+ "serde_json",
 ]
