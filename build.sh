@@ -1,44 +1,41 @@
 #!/bin/bash
-./build-rust.sh
 
-# for native build
-# gcc -o main main.c -L./bin -lgroth16_wasm -I./include -lm
-# echo "Compilation complete. Output: main.wasm"
+rm -rf bin pkg
+mkdir -p bin include pkg
+
+RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
+cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm32-wasip1 --release -Zbuild-std-features=panic_immediate_abort
+
+#wasm-opt target/wasm32-wasip1/release/groth16_wasm.wasm -O4 -o target/wasm32-wasip1/release/groth16_wasm.wasm
+#cargo build --target=wasm32-wasip1 --release
 
 
-## FOR WASM64 BUILD
-# Then, compile the C code and link with the Rust library
-# Set up the base command
-cmd="emcc -O3"
 
-# Add common flags
-cmd+=" -g2 -s ASYNCIFY=1 -s MEMORY64=1 -s STACK_SIZE=41943040"
-cmd+=" -s ASYNCIFY_STACK_SIZE=41943040 -s ALLOW_MEMORY_GROWTH=1"
-cmd+=" -s INITIAL_MEMORY=83886080 -s MAXIMUM_MEMORY=17179869184"
-cmd+=" -s WASM=1 -s MODULARIZE -s DETERMINISTIC=1 -s NODERAWFS=0"
-cmd+=" -s FORCE_FILESYSTEM=1 -msimd128"
 
-# Add assertions
-cmd+=" -s ASSERTIONS=2"  # Changed from 1 to 2 for more verbose assertions
+rustup run nightly cbindgen  --crate groth16_wasm --output include/groth16_wasm.h # --config cbindgen.toml 
 
-# Add exported functions and runtime methods
-cmd+=" -s EXPORTED_FUNCTIONS=['_malloc','_main']"  # Combined into a single array
-cmd+=" -s EXPORTED_RUNTIME_METHODS=['cwrap']"
+rustup run nightly wasm-bindgen target/wasm32-wasip1/release/groth16_wasm.wasm --out-dir ./pkg  --target nodejs
 
-# Add project-specific components
-cmd+=" main.c"                  # Source file
-cmd+=" -L./bin -lgroth16_wasm"  # Library path and library
-cmd+=" -I./include"             # Include directory
+################################ NEW BUILD SCRIPT ################################
 
-# Add additional error checking
-cmd+=" -s STACK_OVERFLOW_CHECK=2"
-cmd+=" -s SAFE_HEAP=1"
+# High level command, not compatible,  breaking, actually this works better, but the above is more closer to ao flags
+#RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" rustup run nightly wasm-pack build --target nodejs --out-name groth16_wasm -- --target wasm32-wasip1 -Z build-std=std,panic_unwind,panic_abort -Z build-std-features=panic_immediate_abort
 
-# Set output files
-cmd+=" -o groth16_wasm.wasm"
-cmd+=" -o groth16_wasm.js"
 
-# Execute the command
-echo "Executing: $cmd"
-eval $cmd
-echo "Compilation complete. Output: groth16_wasm.wasm groth16_wasm.js"
+
+
+#cp target/wasm32-wasip1/release/*.wasm ./bin
+cp target/wasm32-wasip1/release/*.a ./bin
+
+node --experimental-wasm-memory64 index.js
+
+# ../ao-rust-c-test/groth16_wasm.h
+
+rm  ../ao-rust/dev-cli/container/src/groth16/libgroth16_wasm.a  
+
+cp include/groth16_wasm.h ../ao-c-test/
+
+cp bin/*.a ../ao-rust/dev-cli/container/src/groth16
+cp include/* ../ao-rust/dev-cli/container/src/groth16
+
+cd ../ao-rust/dev-cli/container/ && ./build.sh

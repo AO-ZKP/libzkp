@@ -1,72 +1,68 @@
-// lib.rs
+use lambdaworks_groth16::{
+    common::FrElement,
+    setup, verify, Prover,
+    QuadraticArithmeticProgram as QAP,
+};
 
-use bellman::{groth16, Circuit, ConstraintSystem, SynthesisError};
-use bls12_381::Bls12;
-use ff::PrimeField;
-use rand_chacha::ChaCha20Rng;
-use rand::SeedableRng;
-
-
-#[derive(Clone)]
-struct SimpleCircuit<F: PrimeField> {
-    a: Option<F>,
-    b: Option<F>,
-}
-
-impl<F: PrimeField> Circuit<F> for SimpleCircuit<F> {
-    fn synthesize<CS: ConstraintSystem<F>>(
-        self,
-        cs: &mut CS,
-    ) -> Result<(), SynthesisError> {
-        let a = cs.alloc(|| "a", || self.a.ok_or(SynthesisError::AssignmentMissing))?;
-        let b = cs.alloc(|| "b", || self.b.ok_or(SynthesisError::AssignmentMissing))?;
-        let c = cs.alloc_input(
-            || "c",
-            || {
-                let mut a = self.a.ok_or(SynthesisError::AssignmentMissing)?;
-                let b = self.b.ok_or(SynthesisError::AssignmentMissing)?;
-                a.mul_assign(&b);
-                Ok(a)
-            },
-        )?;
-
-        cs.enforce(
-            || "mult",
-            |lc| lc + a,
-            |lc| lc + b,
-            |lc| lc + c,
-        );
-
-        Ok(())
-    }
+// Define the Vitalik QAP (x^3 + x + 5 = 35)
+fn vitalik_qap() -> QAP {
+    let num_of_public_inputs = 1;
+    let [l, r, o] = [
+        [
+            ["0", "0", "0", "5"], // 1
+            ["1", "0", "1", "0"], // x
+            ["0", "0", "0", "0"], // ~out
+            ["0", "1", "0", "0"], // sym_1
+            ["0", "0", "1", "0"], // y
+            ["0", "0", "0", "1"], // sym_2
+        ],
+        [
+            ["0", "0", "1", "1"],
+            ["1", "1", "0", "0"],
+            ["0", "0", "0", "0"],
+            ["0", "0", "0", "0"],
+            ["0", "0", "0", "0"],
+            ["0", "0", "0", "0"],
+        ],
+        [
+            ["0", "0", "0", "0"],
+            ["0", "0", "0", "0"],
+            ["0", "0", "0", "1"],
+            ["1", "0", "0", "0"],
+            ["0", "1", "0", "0"],
+            ["0", "0", "1", "0"],
+        ],
+    ]
+    .map(|matrix| matrix.map(|row| row.map(FrElement::from_hex_unchecked).to_vec()));
+    QAP::from_variable_matrices(num_of_public_inputs, &l, &r, &o)
 }
 
 #[no_mangle]
-pub extern "C" fn generate_and_verify_proof() -> i32 {
-    let mut rng = ChaCha20Rng::seed_from_u64(42);
+pub extern "C" fn rust_test() -> i32 {
+    // Set up the QAP
+    let qap = vitalik_qap();
+    println!("QAP is set up");
+    // Generate proving and verifying keys
+    let (pk, vk) = setup(&qap);
 
-    let params = {
-        let c = SimpleCircuit::<bls12_381::Scalar> {
-            a: None,
-            b: None,
-        };
-        groth16::generate_random_parameters::<Bls12, _, _>(c, &mut rng).unwrap()
-    };
+    // Create a witness (x = 3)
+    let w = ["0x1", "0x3", "0x23", "0x9", "0x1b", "0x1e"]
+        .map(FrElement::from_hex_unchecked)
+        .to_vec();
 
-    let pvk = groth16::prepare_verifying_key(&params.vk);
+    // Generate the proof
+    let proof = Prover::prove(&w, &qap, &pk);
 
-    let a = bls12_381::Scalar::from(3u64);
-    let b = bls12_381::Scalar::from(4u64);
-    let c = a * b;
-
-    let circuit = SimpleCircuit {
-        a: Some(a),
-        b: Some(b),
-    };
-
-    let proof = groth16::create_random_proof(circuit, &params, &mut rng).unwrap();
-
-    let result = groth16::verify_proof(&pvk, &proof, &[c]).is_ok();
-
-    if result { 1 } else { 0 }
+    // Verify the proof
+    let public_inputs = &w[..qap.num_of_public_inputs];
+    let is_valid = verify(&vk, &proof, public_inputs);
+    
+    // Return 1 if valid, 0 otherwise
+    if is_valid {
+        1
+    } else {
+        0
+    }
+    
+    
 }

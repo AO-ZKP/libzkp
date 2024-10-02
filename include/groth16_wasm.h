@@ -8,6 +8,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int32_t generate_and_verify_proof(void);
+int32_t rust_test(void);
 
 #endif  /* GROTH16_WASM_H */
