@@ -1,13 +1,13 @@
 // Import the WASM module
 
 console.log("\n\n         *************** STARTING TEST FOR GROTH16 ***************");
-const groth16_wasm = require('./pkg/groth16_wasm.js');
+const zkp = require('./pkg/zkp.js');
 
 function main() {
     
 
     // Access the WASM exports directly
-    const wasm = groth16_wasm.__wasm;
+    const wasm = zkp.__wasm;
 
     console.log("\nWebAssembly exports:", Object.keys(wasm));
 

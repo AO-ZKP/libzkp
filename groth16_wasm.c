@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "groth16_wasm.h"
-#include "libgroth16_wasm.h"
+#include "zkp.h"
+#include "libzkp.h"
 // #include <emscripten.h>
 
 
