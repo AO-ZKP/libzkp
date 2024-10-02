@@ -29,13 +29,17 @@ cp target/wasm32-wasip1/release/*.a ./bin
 
 node --experimental-wasm-memory64 index.js
 
+cp bin/*.a ../aos-zkp/container/src/groth16
+
+cp include/*.h ../aos-zkp/container/src/groth16
+
 # ../ao-rust-c-test/zkp.h
 
-rm  ../ao-rust/dev-cli/container/src/groth16/libzkp.a  
+# rm  ../ao-rust/dev-cli/container/src/groth16/libzkp.a  
 
-cp include/zkp.h ../ao-c-test/
+# cp include/zkp.h ../ao-c-test/
 
-cp bin/*.a ../ao-rust/dev-cli/container/src/groth16
-cp include/* ../ao-rust/dev-cli/container/src/groth16
+# cp bin/*.a ../ao-rust/dev-cli/container/src/groth16
+# cp include/* ../ao-rust/dev-cli/container/src/groth16
 
-cd ../ao-rust/dev-cli/container/ && ./build.sh
+# cd ../ao-rust/dev-cli/container/ && ./build.sh
