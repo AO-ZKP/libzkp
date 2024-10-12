@@ -14,7 +14,7 @@ cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm32-wasip1 --releas
 
 rustup run nightly cbindgen  --crate zkp --output include/zkp.h # --config cbindgen.toml 
 
-rustup run nightly wasm-bindgen target/wasm32-wasip1/release/zkp.wasm --out-dir ./pkg  --target nodejs
+#rustup run nightly wasm-bindgen target/wasm32-wasip1/release/zkp.wasm --out-dir ./pkg  --target nodejs
 
 ################################ NEW BUILD SCRIPT ################################
 
@@ -27,7 +27,7 @@ rustup run nightly wasm-bindgen target/wasm32-wasip1/release/zkp.wasm --out-dir 
 #cp target/wasm32-wasip1/release/*.wasm ./bin
 cp target/wasm32-wasip1/release/*.a ./bin
 
-node --experimental-wasm-memory64 index.js
+#node --experimental-wasm-memory64 index.js
 
 cp bin/*.a ../aos-zkp/container/src/groth16
 
