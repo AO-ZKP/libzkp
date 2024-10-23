@@ -1,0 +1,12 @@
+/target
+
+codebase.md
+main
+
+groth16_wasm*
+*.wasm
+node_modules/
+.env
+.DS_Store
+
+temp-obj/
