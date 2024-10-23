@@ -8,6 +8,4 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int32_t rust_test(void);
-
 #endif  /* ZKP_H */

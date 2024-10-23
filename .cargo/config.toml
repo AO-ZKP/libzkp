@@ -1,5 +1,4 @@
-[build]
-target = ["wasm32-wasip1"]
+
 
 [rust]
 lld = true

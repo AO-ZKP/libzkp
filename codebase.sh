@@ -80,9 +80,9 @@ get_file_type() {
     fi
     
     # For other types, use a heuristic approach
-    if LC_ALL=C grep -qP "[\x00]" "$file"; then
+    if LC_ALL=C grep -q "[\x00]" "$file"; then
         echo "binary"  # File contains null bytes, likely binary
-    elif LC_ALL=C grep -qP "[\x00-\x08\x0E-\x1F\x7F]" <(head -c 1024 "$file"); then
+    elif LC_ALL=C grep -q "[\x00-\x08\x0E-\x1F\x7F]" <(head -c 1024 "$file"); then
         echo "binary"  # File contains control characters, likely binary
     else
         echo "text"  # Likely a text file
