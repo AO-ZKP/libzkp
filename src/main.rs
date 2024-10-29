@@ -202,8 +202,8 @@ pub fn main() {
         &r1cs_str,
         &witness_str
     );
-    
-    
+
+
     let (pk, vk) = setup(&qap);
     let proof = helpers::circom_str_to_proof(PROOF);
 
