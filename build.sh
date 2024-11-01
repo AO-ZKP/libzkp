@@ -3,8 +3,10 @@
 rm -rf bin pkg
 mkdir -p bin include pkg
 
-RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
-cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm32-wasip1 --release -Zbuild-std-features=panic_immediate_abort
+#RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
+#cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm32-wasip1 --release -Zbuild-std-features=panic_immediate_abort
+
+cargo build --release
 
 #wasm-opt target/wasm32-wasip1/release/zkp.wasm -O4 -o target/wasm32-wasip1/release/zkp.wasm
 #cargo build --target=wasm32-wasip1 --release
