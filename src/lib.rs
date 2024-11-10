@@ -1,68 +1,96 @@
-use lambdaworks_groth16::{
-    common::FrElement,
-    setup, verify, Prover,
-    QuadraticArithmeticProgram as QAP,
-};
+use bls12_381::{Bls12, Scalar};
+use std::ffi::CStr;
+use std::os::raw::c_char;
+use serde::{Deserialize, Serialize};
+use groth16::{prepare_verifying_key, verify_proof, Proof, VerifyingKey};
 
-// Define the Vitalik QAP (x^3 + x + 5 = 35)
-fn vitalik_qap() -> QAP {
-    let num_of_public_inputs = 1;
-    let [l, r, o] = [
-        [
-            ["0", "0", "0", "5"], // 1
-            ["1", "0", "1", "0"], // x
-            ["0", "0", "0", "0"], // ~out
-            ["0", "1", "0", "0"], // sym_1
-            ["0", "0", "1", "0"], // y
-            ["0", "0", "0", "1"], // sym_2
-        ],
-        [
-            ["0", "0", "1", "1"],
-            ["1", "1", "0", "0"],
-            ["0", "0", "0", "0"],
-            ["0", "0", "0", "0"],
-            ["0", "0", "0", "0"],
-            ["0", "0", "0", "0"],
-        ],
-        [
-            ["0", "0", "0", "0"],
-            ["0", "0", "0", "0"],
-            ["0", "0", "0", "1"],
-            ["1", "0", "0", "0"],
-            ["0", "1", "0", "0"],
-            ["0", "0", "1", "0"],
-        ],
-    ]
-    .map(|matrix| matrix.map(|row| row.map(FrElement::from_hex_unchecked).to_vec()));
-    QAP::from_variable_matrices(num_of_public_inputs, &l, &r, &o)
+#[derive(Serialize, Deserialize)]
+struct VerifierInput {
+    vk: String,           // base64 encoded verifying key
+    proof: String,        // base64 encoded proof
+    public_inputs: String // base64 encoded array of public inputs
 }
 
+/// Returns true if proof is valid, false otherwise
 #[no_mangle]
-pub extern "C" fn rust_test() -> i32 {
-    // Set up the QAP
-    let qap = vitalik_qap();
-    println!("QAP is set up");
-    // Generate proving and verifying keys
-    let (pk, vk) = setup(&qap);
+pub extern "C" fn verify(input_ptr: *const c_char) -> bool {
+    // Convert C string to Rust string
+    let input_str = unsafe {
+        match CStr::from_ptr(input_ptr).to_str() {
+            Ok(s) => s,
+            Err(_) => return false
+        }
+    };
 
-    // Create a witness (x = 3)
-    let w = ["0x1", "0x3", "0x23", "0x9", "0x1b", "0x1e"]
-        .map(FrElement::from_hex_unchecked)
-        .to_vec();
+    // Parse input JSON
+    let input: VerifierInput = match serde_json::from_str(input_str) {
+        Ok(i) => i,
+        Err(_) => return false
+    };
 
-    // Generate the proof
-    let proof = Prover::prove(&w, &qap, &pk);
+    // Decode base64 inputs
+    let vk_bytes = match base64::decode(&input.vk) {
+        Ok(bytes) => bytes,
+        Err(_) => return false
+    };
+
+    let proof_bytes = match base64::decode(&input.proof) {
+        Ok(bytes) => bytes,
+        Err(_) => return false 
+    };
+
+    let inputs_bytes = match base64::decode(&input.public_inputs) {
+        Ok(bytes) => bytes,
+        Err(_) => return false
+    };
+
+    // Deserialize verifying key
+    let verifying_key = match VerifyingKey::<Bls12>::read(&vk_bytes[..]) {
+        Ok(vk) => vk,
+        Err(_) => return false
+    };
+
+    // Deserialize proof
+    let proof = match Proof::<Bls12>::read(&proof_bytes[..]) {
+        Ok(p) => p,
+        Err(_) => return false
+    };
+
+    // Deserialize public inputs
+    let public_inputs: Vec<Scalar> = match deserialize_public_inputs(&inputs_bytes) {
+        Ok(inputs) => inputs,
+        Err(_) => return false
+    };
+
+    // Prepare verifying key
+    let pvk = prepare_verifying_key(&verifying_key);
 
     // Verify the proof
-    let public_inputs = &w[..qap.num_of_public_inputs];
-    let is_valid = verify(&vk, &proof, public_inputs);
-    
-    // Return 1 if valid, 0 otherwise
-    if is_valid {
-        1
-    } else {
-        0
+    match verify_proof(&pvk, &proof, &public_inputs[..]) {
+        Ok(()) => true,
+        Err(_) => false
     }
-    
-    
 }
+
+fn deserialize_public_inputs(bytes: &[u8]) -> Result<Vec<Scalar>, &'static str> {
+    if bytes.len() % 32 != 0 {
+        return Err("Invalid public inputs length");
+    }
+
+    let mut result = Vec::with_capacity(bytes.len() / 32);
+    let mut buf = [0u8; 32];
+
+    for chunk in bytes.chunks(32) {
+        buf.copy_from_slice(chunk);
+        if let Some(fr) = Scalar::from_bytes(&buf).into() {
+            result.push(fr);
+        } else {
+            return Err("Invalid public input value");
+        }
+    }
+
+    Ok(result)
+}
+
+// Note: Removed alloc_string and free_string as they weren't necessary 
+// since we're just returning a bool
