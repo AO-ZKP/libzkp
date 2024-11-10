@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int32_t rust_test(void);
+/**
+ * Returns true if proof is valid, false otherwise
+ */
+bool verify(const char *input_ptr);
 
 #endif  /* ZKP_H */
