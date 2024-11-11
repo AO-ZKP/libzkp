@@ -9,8 +9,9 @@
 #include <stdlib.h>
 
 /**
- * Returns true if proof is valid, false otherwise
+ * Verifies a Groth16 proof
+ * Returns 0 for success, negative numbers for specific error conditions
  */
-bool verify(const char *input_ptr);
+int32_t verify(const char *input_ptr);
 
 #endif  /* ZKP_H */
