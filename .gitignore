@@ -11,4 +11,6 @@ node_modules/
 
 temp-obj/
 
+Cargo.lock
+
 bin/
