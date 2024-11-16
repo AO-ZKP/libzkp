@@ -14,3 +14,8 @@ temp-obj/
 Cargo.lock
 
 bin/
+
+*.ptau
+*.zkey
+*.r1cs
+*.wtns
