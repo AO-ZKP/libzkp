@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SCRIPT_NAME=$(basename "$0")
 OUTPUT_FILE="codebase.md"
 rm -f "$OUTPUT_FILE"
 
@@ -11,7 +12,7 @@ echo "Starting script at $(date)"
 echo "Generating tree structure..."
 echo "## Project Structure" >> "$OUTPUT_FILE"
 echo '```' >> "$OUTPUT_FILE"
-tree -I ".git|$OUTPUT_FILE" --gitignore >> "$OUTPUT_FILE"
+tree -I ".git|$OUTPUT_FILE|$SCRIPT_NAME" --gitignore >> "$OUTPUT_FILE"
 echo '```' >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
@@ -21,14 +22,17 @@ is_valid_text_file() {
 }
 
 echo "Processing files..."
-git ls-files | while read -r file; do
-    if [[ -f "$file" ]]; then
+
+# Use tree to list files, respecting .gitignore, and remove leading './'
+tree -if --noreport --gitignore | sed 's|^./||' | while read -r file; do
+    # Skip directories and excluded files
+    if [ -f "$file" ] && [ "$file" != "$OUTPUT_FILE" ] && [ "$file" != "$SCRIPT_NAME" ]; then
         if is_valid_text_file "$file"; then
             echo "Adding $file"
             echo "## File: $file" >> "$OUTPUT_FILE"
             echo '```' >> "$OUTPUT_FILE"
             cat "$file" >> "$OUTPUT_FILE"
-            echo '```' >> "$OUTPUT_FILE"
+            echo -e '\n```' >> "$OUTPUT_FILE"
             echo "" >> "$OUTPUT_FILE"
         else
             echo "Skipping $file (likely binary or image file)"
@@ -39,4 +43,7 @@ done
 echo "File processing completed at $(date)"
 
 echo "Codebase conversion complete. Output saved to $OUTPUT_FILE"
+echo "File size:"
+ls -lh "$OUTPUT_FILE"
+
 echo "Script finished at $(date)"
