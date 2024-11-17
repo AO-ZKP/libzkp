@@ -1,22 +1,12 @@
-// In lib.rs - Add this at the root of the verify folder
 pub mod adapter;
 pub mod circuit;
 
-use adapter::types::{ProofStr, VkeyStr};
+use std::ffi::{CStr, c_char};
+use crate::adapter::types::{ProofStr, VkeyStr};
+use serde_json::{Value, json};
 
-use ff::PrimeField as Fr;
-
-/// Verifies a zero-knowledge proof against a verification key and public input
-/// 
-/// # Arguments
-/// * `proof` - The proof in uncompressed format
-/// * `vkey` - The verification key in uncompressed format
-/// * `public_input` - The public input as a string
-/// * `curve_type` - The curve type: "bn" for BN254 or "bls" for BLS12-381
-/// 
-/// # Returns
-/// * `bool` - True if verification succeeds, false otherwise
-pub fn verify(proof: ProofStr, vkey: VkeyStr, public_input: &str, curve_type: &str) -> bool {
+/// Internal verify function used by the library
+fn verify_internal(proof: ProofStr, vkey: VkeyStr, public_input: &str, curve_type: &str) -> bool {
     match curve_type {
         "bls" => {
             use bellman::groth16::{prepare_verifying_key, verify_proof};
@@ -29,7 +19,7 @@ pub fn verify(proof: ProofStr, vkey: VkeyStr, public_input: &str, curve_type: &s
             verify_proof(
                 &pvk,
                 &pof, 
-                &[Fr::from_str_vartime(public_input).unwrap()]
+                &[ff::PrimeField::from_str_vartime(public_input).unwrap()]
             ).is_ok()
         },
         "bn" => {
@@ -51,39 +41,156 @@ pub fn verify(proof: ProofStr, vkey: VkeyStr, public_input: &str, curve_type: &s
     }
 }
 
+/// C-compatible verify function that takes a JSON string input
+#[no_mangle]
+pub extern "C" fn verify(input_ptr: *const c_char) -> i32 {
+    // Safety checks
+    if input_ptr.is_null() {
+        return -1; // Null pointer error
+    }
+
+    // Convert C string to Rust string safely
+    let c_str = unsafe {
+        match CStr::from_ptr(input_ptr).to_str() {
+            Ok(s) => s,
+            Err(_) => return -2, // Invalid UTF-8 error
+        }
+    };
+
+    // Parse JSON input
+    let json_value: Value = match serde_json::from_str(c_str) {
+        Ok(v) => v,
+        Err(_) => return -3, // JSON parsing error
+    };
+
+    // Extract required fields
+    let proof = match extract_proof(&json_value) {
+        Ok(p) => p,
+        Err(_) => return -4, // Proof extraction error
+    };
+
+    let vkey = match extract_vkey(&json_value) {
+        Ok(v) => v,
+        Err(_) => return -5, // Vkey extraction error
+    };
+
+    let public_input = match json_value.get("public_input").and_then(Value::as_str) {
+        Some(input) => input,
+        None => return -6, // Missing public input error
+    };
+
+    let curve_type = match json_value.get("curve_type").and_then(Value::as_str) {
+        Some(curve) if curve == "bn" || curve == "bls" => curve,
+        _ => return -7, // Invalid curve type error
+    };
+
+    // Call the internal verify function
+    match verify_internal(proof, vkey, public_input, curve_type) {
+        true => 0,  // Success
+        false => 1, // Verification failed
+    }
+}
+
+fn extract_proof(json: &Value) -> Result<ProofStr, &'static str> {
+    let proof_obj = json.get("proof").ok_or("Missing proof object")?;
+    
+    Ok(ProofStr {
+        pi_a: extract_bytes_array(proof_obj, "pi_a")?,
+        pi_b: extract_bytes_array(proof_obj, "pi_b")?,
+        pi_c: extract_bytes_array(proof_obj, "pi_c")?,
+    })
+}
+
+fn extract_vkey(json: &Value) -> Result<VkeyStr, &'static str> {
+    let vkey_obj = json.get("vkey").ok_or("Missing vkey object")?;
+    
+    Ok(VkeyStr {
+        alpha_1: extract_bytes_array(vkey_obj, "alpha_1")?,
+        beta_2: extract_bytes_array(vkey_obj, "beta_2")?,
+        gamma_2: extract_bytes_array(vkey_obj, "gamma_2")?,
+        delta_2: extract_bytes_array(vkey_obj, "delta_2")?,
+        ic: extract_ic_array(vkey_obj)?,
+    })
+}
+
+fn extract_bytes_array(obj: &Value, field: &str) -> Result<Vec<u8>, &'static str> {
+    obj.get(field)
+        .and_then(Value::as_array)
+        .ok_or("Missing or invalid field")?
+        .iter()
+        .map(|v| v.as_u64().map(|n| n as u8))
+        .collect::<Option<Vec<u8>>>()
+        .ok_or("Invalid byte array")
+}
+
+fn extract_ic_array(obj: &Value) -> Result<Vec<Vec<u8>>, &'static str> {
+    obj.get("ic")
+        .and_then(Value::as_array)
+        .ok_or("Missing ic array")?
+        .iter()
+        .map(|arr| {
+            arr.as_array()
+                .and_then(|nums| {
+                    nums.iter()
+                        .map(|v| v.as_u64().map(|n| n as u8))
+                        .collect::<Option<Vec<u8>>>()
+                })
+                .ok_or("Invalid ic array")
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::from_str;
     use std::fs;
 
-    #[test]
-    fn test_verify_multiplication_circuit() {
-        // Read the proof and verification key from the test circuit
-        let proof_str = fs::read_to_string("circuit/Multiplication/proof_uncompressed.json")
-            .expect("Failed to read proof file");
-        let vkey_str = fs::read_to_string("circuit/Multiplication/vkey_uncompressed.json")
-            .expect("Failed to read vkey file");
+    /// Test helper function to create a JSON input string for verification
+    fn create_verification_input(proof_path: &str, vkey_path: &str, public_input: &str, curve_type: &str) -> String {
+        let proof_json: Value = serde_json::from_str(
+            &fs::read_to_string(proof_path).expect("Failed to read proof file")
+        ).expect("Failed to parse proof JSON");
+        
+        let vkey_json: Value = serde_json::from_str(
+            &fs::read_to_string(vkey_path).expect("Failed to parse vkey file")
+        ).expect("Failed to parse vkey JSON");
 
-        let proof: ProofStr = from_str(&proof_str).expect("Failed to parse proof");
-        let vkey: VkeyStr = from_str(&vkey_str).expect("Failed to parse vkey");
+        // Create the complete input JSON structure
+        let input = json!({
+            "proof": proof_json,
+            "vkey": vkey_json,
+            "public_input": public_input,
+            "curve_type": curve_type
+        });
 
-        // The public input is 33 for the multiplication circuit (as shown in the example)
-        assert!(verify(proof, vkey, "15", "bn"));
+        input.to_string()
     }
 
     #[test]
-    fn test_verify_multiplication_circuit_invalid_input() {
-        // Same setup but with wrong public input
-        let proof_str = fs::read_to_string("circuit/Multiplication/proof_uncompressed.json")
-            .expect("Failed to read proof file");
-        let vkey_str = fs::read_to_string("circuit/Multiplication/vkey_uncompressed.json")
-            .expect("Failed to read vkey file");
+    fn test_valid_bn_proof() {
+        let input = create_verification_input(
+            "circuit/Multiplication/proof_uncompressed.json",
+            "circuit/Multiplication/vkey_uncompressed.json",
+            "15",  // Correct public input
+            "bn"
+        );
 
-        let proof: ProofStr = from_str(&proof_str).expect("Failed to parse proof");
-        let vkey: VkeyStr = from_str(&vkey_str).expect("Failed to parse vkey");
+        let c_input = std::ffi::CString::new(input).unwrap();
+        let result = verify(c_input.as_ptr());
+        assert_eq!(result, 0, "Verification should succeed with valid proof");
+    }
 
-        // This should fail since 34 is not the correct public input
-        assert!(!verify(proof, vkey, "34", "bn"));
+    #[test]
+    fn test_invalid_bn_proof() {
+        let input = create_verification_input(
+            "circuit/Multiplication/proof_uncompressed.json",
+            "circuit/Multiplication/vkey_uncompressed.json",
+            "999",  // Incorrect public input
+            "bn"
+        );
+
+        let c_input = std::ffi::CString::new(input).unwrap();
+        let result = verify(c_input.as_ptr());
+        assert_eq!(result, 1, "Verification should fail with invalid public input");
     }
 }
