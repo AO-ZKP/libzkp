@@ -3,7 +3,7 @@ pub mod circuit;
 
 use std::ffi::{CStr, c_char};
 use crate::adapter::types::{ProofStr, VkeyStr};
-use serde_json::{Value, json};
+use serde_json::Value;
 
 /// Internal verify function used by the library
 fn verify_internal(proof: ProofStr, vkey: VkeyStr, public_input: &str, curve_type: &str) -> bool {
@@ -144,6 +144,7 @@ fn extract_ic_array(obj: &Value) -> Result<Vec<Vec<u8>>, &'static str> {
 mod tests {
     use super::*;
     use std::fs;
+    use serde_json::json;
 
     /// Test helper function to create a JSON input string for verification
     fn create_verification_input(proof_path: &str, vkey_path: &str, public_input: &str, curve_type: &str) -> String {

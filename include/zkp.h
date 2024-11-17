@@ -8,9 +8,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define MIMC_ROUNDS 322
+
 /**
- * Verifies a Groth16 proof
- * Returns 0 for success, negative numbers for specific error conditions
+ * C-compatible verify function that takes a JSON string input
  */
 int32_t verify(const char *input_ptr);
 
