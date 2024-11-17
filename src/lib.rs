@@ -3,7 +3,7 @@ pub mod circuit;
 
 use std::ffi::{CStr, c_char};
 use crate::adapter::types::{ProofStr, VkeyStr};
-use serde_json::{Value, json};
+use serde_json::Value;
 
 /// Internal verify function used by the library
 fn verify_internal(proof: ProofStr, vkey: VkeyStr, public_input: &str, curve_type: &str) -> bool {
