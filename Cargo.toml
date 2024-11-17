@@ -7,7 +7,6 @@ edition = "2021"
 name = "zkp"
 crate-type = ["cdylib","staticlib","rlib"]
 
-
 [dependencies]
 bellman = "0.14"
 byteorder = "1"
@@ -17,11 +16,14 @@ pairing = "0.23"
 rand_core = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+bls12_381 = "0.8"
 
-#mlua = {version = "*", features = ["luajit", "vendored", "module", "async", "send", "serialize", "macros"]}
+pairing_ce = { git = "https://github.com/matter-labs/pairing.git" }
+ff_ce = "0.14.3"
+bellman_ce = { git = "https://github.com/DoraFactory/bellman.git" }
+
 
 [dev-dependencies]
-bls12_381 = "0.8"
 rand = "0.8"
 subtle = "2.2.1"
 
