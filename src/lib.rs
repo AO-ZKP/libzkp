@@ -1,5 +1,4 @@
 pub mod adapter;
-pub mod circuit;
 
 use std::ffi::{CStr, c_char};
 use crate::adapter::types::{ProofStr, VkeyStr};
