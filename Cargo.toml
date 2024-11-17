@@ -18,9 +18,9 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bls12_381 = "0.8"
 
-pairing_ce = { git = "https://github.com/matter-labs/pairing.git" }
-ff_ce = "0.14.3"
-bellman_ce = { git = "https://github.com/DoraFactory/bellman.git" }
+pairing_ce = { version = "=0.30.6", git="https://github.com/matter-labs/zksync-crypto.git", package = "zksync_pairing" }
+ff_ce = { version = "=0.30.6", git="https://github.com/matter-labs/zksync-crypto.git", package = "zksync_ff" }
+bellman_ce = { version = "=0.30.6", git="https://github.com/matter-labs/zksync-crypto.git", package = "zksync_bellman" }
 
 
 [dev-dependencies]
