@@ -1,15 +1,12 @@
-use bellman::groth16::{
-    Proof, VerifyingKey,
-};
-use pairing::Engine;
-use bls12_381::{G1Affine, G2Affine};
 use super::{ProofStr, VkeyStr};
+use bellman::groth16::{Proof, VerifyingKey};
+use bls12_381::{G1Affine, G2Affine};
+use pairing::Engine;
 
 pub fn parse_bls_proof<E>(proof: &ProofStr) -> Proof<E>
 where
     E: Engine<G1Affine = G1Affine, G2Affine = G2Affine>,
 {
-
     let pi_a = &proof.pi_a;
     let pi_b = &proof.pi_b;
     let pi_c = &proof.pi_c;
@@ -28,7 +25,7 @@ where
     let pib_affine = G2Affine::from_uncompressed(&b_arr).unwrap();
     let pic_affine = G1Affine::from_uncompressed(&c_arr).unwrap();
 
-    Proof{
+    Proof {
         a: pia_affine,
         b: pib_affine,
         c: pic_affine,
@@ -37,7 +34,7 @@ where
 
 pub fn parse_bls_vkey<E>(vkey: &VkeyStr) -> VerifyingKey<E>
 where
-E: Engine<G1Affine = G1Affine, G2Affine = G2Affine>,
+    E: Engine<G1Affine = G1Affine, G2Affine = G2Affine>,
 {
     let vk_alpha_1 = &vkey.alpha_1;
     let vk_beta_2 = &vkey.beta_2;
@@ -74,7 +71,7 @@ E: Engine<G1Affine = G1Affine, G2Affine = G2Affine>,
     ic.push(ic0_affine);
     ic.push(ic1_affine);
 
-    VerifyingKey{
+    VerifyingKey {
         alpha_g1: alpha1_affine,
         beta_g1: G1Affine::identity(),
         beta_g2: beta2_affine,
@@ -84,3 +81,4 @@ E: Engine<G1Affine = G1Affine, G2Affine = G2Affine>,
         ic,
     }
 }
+

@@ -8,11 +8,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define MIMC_ROUNDS 322
-
-/**
- * C-compatible verify function that takes a JSON string input
- */
 int32_t verify(const char *input_ptr);
 
 #endif  /* ZKP_H */
