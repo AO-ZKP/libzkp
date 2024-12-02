@@ -1,7 +1,9 @@
+// src/adapter/parser_bn.rs
+
 use super::{ProofStr, VkeyStr};
-use bellman_ce::groth16::{Proof, VerifyingKey};
 use pairing_ce::bn256::{G1Affine, G1Uncompressed, G2Affine, G2Uncompressed};
 use pairing_ce::{CurveAffine, EncodedPoint, Engine};
+use crate::verifier::{Proof, VerifyingKey};
 
 pub fn parse_bn_proof<E>(proof: &ProofStr) -> Proof<E>
 where
@@ -16,9 +18,7 @@ where
     let mut c_arr: [u8; 64] = [0; 64];
 
     a_arr[..pi_a.len()].copy_from_slice(&pi_a[..]);
-
     b_arr[..pi_b.len()].copy_from_slice(&pi_b[..]);
-
     c_arr[..pi_c.len()].copy_from_slice(&pi_c[..]);
 
     let pia_affine: G1Affine = G1Uncompressed::from_fixed_bytes(a_arr)
@@ -57,15 +57,10 @@ where
     let mut ic = Vec::new();
 
     alpha1[..vk_alpha_1.len()].copy_from_slice(&vk_alpha_1[..]);
-
     beta2[..vk_beta_2.len()].copy_from_slice(&vk_beta_2[..]);
-
     gamma2[..vk_gamma_2.len()].copy_from_slice(&vk_gamma_2[..]);
-
     delta2[..vk_delta_2.len()].copy_from_slice(&vk_delta_2[..]);
-
     ic_0[..vk_ic[0].len()].copy_from_slice(&vk_ic[0][..]);
-
     ic_1[..vk_ic[1].len()].copy_from_slice(&vk_ic[1][..]);
 
     let alpha1_affine = G1Uncompressed::from_fixed_bytes(alpha1)
@@ -100,4 +95,3 @@ where
         ic,
     }
 }
-

@@ -1,4 +1,5 @@
 pub mod adapter;
+pub mod verifier;
 
 use crate::adapter::types::{ProofStr, VkeyStr};
 use serde_json::Value;
@@ -27,8 +28,8 @@ fn verify_internal(
             verify_proof(&pvk, &pof, &inputs).is_ok()
         }
         "bn" => {
-            use bellman_ce::groth16::{prepare_verifying_key, verify_proof};
-            use ff_ce::PrimeField as Frce;
+            use crate::verifier::{prepare_verifying_key, verify_proof};
+            use pairing_ce::ff::PrimeField as Frce;
             use pairing_ce::bn256::Bn256;
 
             let pof = adapter::parser_bn::parse_bn_proof::<Bn256>(&proof);
@@ -74,8 +75,7 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> i32 {
         Err(_) => return -5,
     };
 
-    let public_inputs: Vec<String> = match json_value.get("public_inputs").and_then(Value::as_array)
-    {
+    let public_inputs: Vec<String> = match json_value.get("public_inputs").and_then(Value::as_array) {
         Some(inputs) => inputs
             .iter()
             .map(|v| v.as_str().unwrap().to_string())
@@ -158,15 +158,12 @@ mod tests {
         // Read the files
         let proof_str = fs::read_to_string(proof_path).expect("Failed to read proof file");
         let vkey_str = fs::read_to_string(vkey_path).expect("Failed to read vkey file");
-        let public_str =
-            fs::read_to_string(public_path).expect("Failed to read public inputs file");
+        let public_str = fs::read_to_string(public_path).expect("Failed to read public inputs file");
 
         // Parse JSON
-        let proof_json: Value =
-            serde_json::from_str(&proof_str).expect("Failed to parse proof JSON");
+        let proof_json: Value = serde_json::from_str(&proof_str).expect("Failed to parse proof JSON");
         let vkey_json: Value = serde_json::from_str(&vkey_str).expect("Failed to parse vkey JSON");
-        let public_inputs: Vec<String> =
-            serde_json::from_str(&public_str).expect("Failed to parse public inputs JSON");
+        let public_inputs: Vec<String> = serde_json::from_str(&public_str).expect("Failed to parse public inputs JSON");
 
         // Create the complete input JSON
         let input = json!({
@@ -213,7 +210,6 @@ mod tests {
             result, 0,
             "Verification should fail with invalid public input"
         );
-
         // Cleanup
         std::fs::remove_file(invalid_path).unwrap();
     }
