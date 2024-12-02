@@ -3,7 +3,7 @@
 use super::{ProofStr, VkeyStr};
 use pairing_ce::bn256::{G1Affine, G1Uncompressed, G2Affine, G2Uncompressed};
 use pairing_ce::{CurveAffine, EncodedPoint, Engine};
-use crate::verifier::{Proof, VerifyingKey};
+use crate::verifier_bn::{Proof, VerifyingKey};
 
 pub fn parse_bn_proof<E>(proof: &ProofStr) -> Proof<E>
 where

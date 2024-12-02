@@ -1,5 +1,5 @@
 pub mod adapter;
-pub mod verifier;
+pub mod verifier_bn;
 
 use crate::adapter::types::{ProofStr, VkeyStr};
 use serde_json::Value;
@@ -28,7 +28,7 @@ fn verify_internal(
             verify_proof(&pvk, &pof, &inputs).is_ok()
         }
         "bn" => {
-            use crate::verifier::{prepare_verifying_key, verify_proof};
+            use crate::verifier_bn::{prepare_verifying_key, verify_proof};
             use pairing_ce::ff::PrimeField as Frce;
             use pairing_ce::bn256::Bn256;
 
