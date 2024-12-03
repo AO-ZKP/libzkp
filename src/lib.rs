@@ -1,5 +1,6 @@
 pub mod adapter;
 pub mod verifier_bn;
+pub mod verifier_bls;
 
 use crate::adapter::types::{ProofStr, VkeyStr};
 use serde_json::Value;
