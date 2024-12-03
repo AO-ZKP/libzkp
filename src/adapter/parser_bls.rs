@@ -1,5 +1,5 @@
 use super::{ProofStr, VkeyStr};
-use bellman::groth16::{Proof, VerifyingKey};
+use crate::verifier_bls::{Proof, VerifyingKey};
 use bls12_381::{G1Affine, G2Affine};
 use pairing::Engine;
 
