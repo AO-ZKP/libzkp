@@ -14,7 +14,7 @@ fn verify_internal(
 ) -> bool {
     match curve_type {
         "bls" => {
-            use bellman::groth16::{prepare_verifying_key, verify_proof};
+            use crate::verifier_bls::{prepare_verifying_key, verify_proof};
             use bls12_381::Bls12;
 
             let pof = adapter::parser_bls::parse_bls_proof::<Bls12>(&proof);

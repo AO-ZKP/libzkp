@@ -8,7 +8,7 @@ name = "zkp"
 crate-type = ["cdylib","staticlib","rlib"]
 
 [dependencies]
-bellman = "0.14"
+
 ff = "0.13"
 group = "0.13"
 pairing = "0.23"
@@ -16,7 +16,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bls12_381 = "0.8"
 
-pairing_ce = { version = "=0.30.6", git="https://github.com/matter-labs/zksync-crypto.git", package = "zksync_pairing" }
+pairing_ce = { version = "=0.30", git="https://github.com/matter-labs/zksync-crypto.git", package = "zksync_pairing" }
 
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
 	"derive",
