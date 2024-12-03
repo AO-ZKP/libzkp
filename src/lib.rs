@@ -23,7 +23,7 @@ fn verify_internal(
 
             let inputs: Vec<_> = public_inputs
                 .iter()
-                .map(|input| ff::PrimeField::from_str_vartime(input).unwrap())
+                .map(|input| group::ff::PrimeField::from_str_vartime(input).unwrap())
                 .collect();
 
             verify_proof(&pvk, &pof, &inputs).is_ok()
