@@ -4,7 +4,7 @@ pub mod verifier_bls;
 
 use crate::adapter::types::{ProofStr, VkeyStr};
 use serde_json::Value;
-use std::ffi::{c_char, CStr};
+use core::ffi::{c_char, CStr};
 
 fn verify_internal(
     proof: ProofStr,
