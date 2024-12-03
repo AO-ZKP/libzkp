@@ -15,17 +15,18 @@ fn verify_internal(
     match curve_type {
         "bls" => {
             use crate::verifier_bls::{prepare_verifying_key, verify_proof};
-            use bls12_381::Bls12;
-
+            use pairing_ce::bls12_381::Bls12;
+            use pairing_ce::ff::PrimeField;
+    
             let pof = adapter::parser_bls::parse_bls_proof::<Bls12>(&proof);
             let verificationkey = adapter::parser_bls::parse_bls_vkey::<Bls12>(&vkey);
             let pvk = prepare_verifying_key(&verificationkey);
-
+    
             let inputs: Vec<_> = public_inputs
                 .iter()
-                .map(|input| group::ff::PrimeField::from_str_vartime(input).unwrap())
+                .map(|input| PrimeField::from_str(input).expect("Invalid public input"))
                 .collect();
-
+    
             verify_proof(&pvk, &pof, &inputs).is_ok()
         }
         "bn" => {
