@@ -9,12 +9,10 @@ node_modules/
 .env
 .DS_Store
 *.lock
-
+*.lockb
 temp-obj/
 
 Cargo.lock
-
-bin/
 
 *.ptau
 *.zkey

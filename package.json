@@ -1,0 +1,1 @@
+{ "dependencies": { "@ethersproject/bytes": "^5.7.0", "ethereum-cryptography": "^3.0.0", "install": "^0.13.0" } }

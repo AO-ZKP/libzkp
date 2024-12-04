@@ -1,218 +1,289 @@
-pub mod adapter;
-pub mod verifier_bn;
-pub mod verifier_bls;
+use alloy_sol_types::{sol, SolValue};
+use alloy_primitives::{keccak256, U256, hex, B256, aliases::U240};
+use risc0_steel::Commitment;
+use risc0_zkvm::{Receipt, sha::Digest};
+use serde::{Serialize, Deserialize};
+use std::ffi::{c_char, CStr, CString};
+use std::convert::AsRef;
 
-use crate::adapter::types::{ProofStr, VkeyStr};
-use serde_json::Value;
-use core::ffi::{c_char, CStr};
+sol! {
+    struct Journal {
+        Commitment commitment;
+        address from;
+        uint256 amount;
+        uint256 timestamp;
+        uint256 nullifier;
+    }
 
-fn verify_internal(
-    proof: ProofStr,
-    vkey: VkeyStr,
-    public_inputs: &[String],
-    curve_type: &str,
-) -> bool {
-    match curve_type {
-        "bls" => {
-            use crate::verifier_bls::{prepare_verifying_key, verify_proof};
-            use pairing_ce::bls12_381::Bls12;
-            use pairing_ce::ff::PrimeField;
-    
-            let pof = adapter::parser_bls::parse_bls_proof::<Bls12>(&proof);
-            let verificationkey = adapter::parser_bls::parse_bls_vkey::<Bls12>(&vkey);
-            let pvk = prepare_verifying_key(&verificationkey);
-    
-            let inputs: Vec<_> = public_inputs
-                .iter()
-                .map(|input| PrimeField::from_str(input).expect("Invalid public input"))
-                .collect();
-    
-            verify_proof(&pvk, &pof, &inputs).is_ok()
+        // Define a new struct for the fields we want to hash
+    struct JournalHashFields {
+        address from;
+        uint256 amount;
+        uint256 timestamp;
+        uint256 nullifier;
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Input {
+    receipt: Receipt,
+    withdraw: String,
+    imageid: String,
+}
+
+#[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+struct Output {
+    error: Option<String>,
+    proof: bool,
+    withdraw: bool,
+    amount: String,
+    timestamp: String,
+    blocknumber: String,
+    blockhash: String,
+}
+
+impl Output {
+    fn failure(error_msg: &str) -> Self {
+        Output {
+            error: Some(error_msg.to_string()),
+            proof: false,
+            withdraw: false,
+            amount: String::new(),
+            timestamp: String::new(),
+            blocknumber: String::new(),
+            blockhash: String::new(),
         }
-        "bn" => {
-            use crate::verifier_bn::{prepare_verifying_key, verify_proof};
-            use pairing_ce::ff::PrimeField as Frce;
-            use pairing_ce::bn256::Bn256;
-
-            let pof = adapter::parser_bn::parse_bn_proof::<Bn256>(&proof);
-            let verificationkey = adapter::parser_bn::parse_bn_vkey::<Bn256>(&vkey);
-            let pvk = prepare_verifying_key(&verificationkey);
-
-            let inputs: Vec<_> = public_inputs
-                .iter()
-                .map(|input| Frce::from_str(input).unwrap())
-                .collect();
-
-            verify_proof(&pvk, &pof, &inputs).unwrap()
-        }
-        _ => panic!("Invalid curve type. Use 'bn' or 'bls'"),
     }
 }
 
 #[no_mangle]
-pub extern "C" fn verify(input_ptr: *const c_char) -> i32 {
+pub extern "C" fn keccak(input_ptr: *const c_char) -> *const c_char {
+    // Validate input pointer
     if input_ptr.is_null() {
-        return -1;
+        return create_error_response("Invalid null input pointer");
     }
 
+    // Convert C string to Rust string
     let c_str = unsafe {
         match CStr::from_ptr(input_ptr).to_str() {
             Ok(s) => s,
-            Err(_) => return -2,
+            Err(_) => return create_error_response("Failed to decode input as UTF-8 string"),
         }
     };
 
-    let json_value: Value = match serde_json::from_str(c_str) {
+    // Parse input JSON
+    let input: Input = match serde_json::from_str(c_str) {
         Ok(v) => v,
-        Err(_) => return -3,
+        Err(_) => return create_error_response("Failed to parse input JSON"),
     };
 
-    let proof = match extract_proof(&json_value) {
-        Ok(p) => p,
-        Err(_) => return -4,
+    // Get the journal bytes from the receipt
+    let journal_bytes: &Vec<u8> = &input.receipt.journal.bytes;
+    
+    // Decode the full journal first
+    let journal: Journal = match Journal::abi_decode(journal_bytes, true) {
+        Ok(j) => j,
+        Err(_) => return create_error_response("Invalid journal data: Failed to decode journal bytes"),
     };
 
-    let vkey = match extract_vkey(&json_value) {
-        Ok(v) => v,
-        Err(_) => return -5,
+    // Create a new JournalHashFields struct with only the fields we want to hash
+    let hash_fields = JournalHashFields {
+        from: journal.from,
+        amount: journal.amount,
+        timestamp: journal.timestamp,
+        nullifier: journal.nullifier,
     };
 
-    let public_inputs: Vec<String> = match json_value.get("public_inputs").and_then(Value::as_array) {
-        Some(inputs) => inputs
-            .iter()
-            .map(|v| v.as_str().unwrap().to_string())
-            .collect(),
-        None => return -6,
-    };
+    // Encode only these fields
+    let encoded_fields = hash_fields.abi_encode();
+    
+    // Calculate keccak hash of only the selected fields
+    let hash: B256 = keccak256(&encoded_fields);
+    
+    // Convert hash to hex string with 0x prefix
+    let hash_hex = format!("0x{}", hex::encode(hash));
+    
+    // Create response JSON
+    let response = serde_json::json!({
+        "error": String::new(),
+        "hash": hash_hex
+    });
 
-    let curve_type = match json_value.get("curve_type").and_then(Value::as_str) {
-        Some(curve) if curve == "bn" || curve == "bls" => curve,
-        _ => return -7,
-    };
+    // Convert to C string and return
+    CString::new(response.to_string())
+        .unwrap_or_else(|_| CString::new(r#"{"error":"Failed to create response"}"#).unwrap())
+        .into_raw()
+}
 
-    match verify_internal(proof, vkey, &public_inputs, curve_type) {
-        true => 1,
-        false => 0,
+fn create_error_response(msg: &str) -> *const c_char {
+    let error_json = serde_json::json!({
+        "error": msg,
+        "hash": String::new()
+    });
+    CString::new(error_json.to_string())
+        .unwrap_or_else(|_| CString::new(r#"{"error":"Failed to create error response"}"#).unwrap())
+        .into_raw()
+}
+
+#[no_mangle]
+pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
+    // Validate input pointer
+    if input_ptr.is_null() {
+        return create_response(&Output::failure("Invalid null input pointer"));
     }
+
+    // Convert C string to Rust string
+    let c_str = unsafe {
+        match CStr::from_ptr(input_ptr).to_str() {
+            Ok(s) => s,
+            Err(_) => return create_response(&Output::failure("Failed to decode input as UTF-8 string")),
+        }
+    };
+
+    // Parse input JSON
+    let input: Input = match serde_json::from_str(c_str) {
+        Ok(v) => v,
+        Err(_) => return create_response(&Output::failure("Failed to parse input JSON")),
+    };
+
+    // Extract components
+    let receipt: Receipt = input.receipt;
+    let withdraw: String = input.withdraw;
+    let image_id: Digest = match hex::decode(&input.imageid[2..]) {
+        Ok(bytes) => match Digest::try_from(bytes.as_slice()) {
+            Ok(digest) => digest,
+            Err(_) => return create_response(&Output::failure("Failed to create digest from image ID")),
+        },
+        Err(_) => return create_response(&Output::failure("Failed to decode hex image ID")),
+    };
+
+    // Decode journal
+    let journal: &Vec<u8> = &receipt.journal.bytes;
+    let journal: Journal = match Journal::abi_decode(journal, true) {
+        Ok(j) => j,
+        Err(_) => return create_response(&Output::failure("Failed to decode journal data")),
+    };
+
+    // Verify nullifier
+    let nullifier: alloy_primitives::Uint<256, 4> = journal.nullifier;
+    let withdraw_hash: U256 = keccak256(withdraw.as_bytes()).into();
+    let does_hash_match: bool = nullifier == withdraw_hash;
+
+    if !does_hash_match {
+        return create_response(&Output::failure("Nullifier verification failed: Hash mismatch"));
+    }
+
+    // Verify proof
+    if let Err(_) = receipt.verify(image_id) {
+        return create_response(&Output::failure("Receipt verification failed"));
+    }
+
+    // Extract commitment details
+    let commitment_id: alloy_primitives::Uint<256, 4> = journal.commitment.id;
+
+    // Create masks matching the Solidity implementation
+    // 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff for ID
+    let id_mask: alloy_primitives::Uint<256, 4> = U256::from_str_radix("0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).unwrap();
+
+    // Extract version (top 16 bits, shifted right by 240)
+    let version: u16 = ((commitment_id >> 240u32).as_limbs()[0] & 0xFFFF) as u16;
+
+    // Extract block number using the bottom 240 bits
+    let masked_value = commitment_id & id_mask;
+    let block_number = U240::from(masked_value);
+
+    if version != 0 {
+        return create_response(&Output::failure("Invalid version number"));
+    }
+
+    // Get digest bytes and encode as hex
+    let digest_bytes: &[u8] = journal.commitment.digest.as_ref();
+
+    // Create successful output
+    let output = Output {
+        error: "".parse().ok(),
+        proof: true,
+        withdraw: true,
+        amount: journal.amount.to_string(),
+        timestamp: journal.timestamp.to_string(),
+        blocknumber: block_number.to_string(),
+        blockhash: format!("0x{}", hex::encode(digest_bytes)),
+    };
+
+    create_response(&output)
 }
 
-fn extract_proof(json: &Value) -> Result<ProofStr, &'static str> {
-    let proof_obj = json.get("proof").ok_or("Missing proof object")?;
-
-    Ok(ProofStr {
-        pi_a: extract_bytes_array(proof_obj, "pi_a")?,
-        pi_b: extract_bytes_array(proof_obj, "pi_b")?,
-        pi_c: extract_bytes_array(proof_obj, "pi_c")?,
-    })
-}
-
-fn extract_vkey(json: &Value) -> Result<VkeyStr, &'static str> {
-    let vkey_obj = json.get("vkey").ok_or("Missing vkey object")?;
-
-    Ok(VkeyStr {
-        alpha_1: extract_bytes_array(vkey_obj, "alpha_1")?,
-        beta_2: extract_bytes_array(vkey_obj, "beta_2")?,
-        gamma_2: extract_bytes_array(vkey_obj, "gamma_2")?,
-        delta_2: extract_bytes_array(vkey_obj, "delta_2")?,
-        ic: extract_ic_array(vkey_obj)?,
-    })
-}
-
-fn extract_bytes_array(obj: &Value, field: &str) -> Result<Vec<u8>, &'static str> {
-    obj.get(field)
-        .and_then(Value::as_array)
-        .ok_or("Missing or invalid field")?
-        .iter()
-        .map(|v| v.as_u64().map(|n| n as u8))
-        .collect::<Option<Vec<u8>>>()
-        .ok_or("Invalid byte array")
-}
-
-fn extract_ic_array(obj: &Value) -> Result<Vec<Vec<u8>>, &'static str> {
-    obj.get("ic")
-        .and_then(Value::as_array)
-        .ok_or("Missing ic array")?
-        .iter()
-        .map(|arr| {
-            arr.as_array()
-                .and_then(|nums| {
-                    nums.iter()
-                        .map(|v| v.as_u64().map(|n| n as u8))
-                        .collect::<Option<Vec<u8>>>()
-                })
-                .ok_or("Invalid ic array")
-        })
-        .collect()
+fn create_response(output: &Output) -> *const c_char {
+    let json = serde_json::to_string(output).unwrap();
+    CString::new(json).unwrap().into_raw()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use std::fs;
 
-    fn create_verification_input(
-        proof_path: &str,
-        vkey_path: &str,
-        public_path: &str,
-        curve_type: &str,
-    ) -> String {
-        // Read the files
-        let proof_str = fs::read_to_string(proof_path).expect("Failed to read proof file");
-        let vkey_str = fs::read_to_string(vkey_path).expect("Failed to read vkey file");
-        let public_str = fs::read_to_string(public_path).expect("Failed to read public inputs file");
+    #[test]
+    fn test_verify_function() {
+        // Read the input JSON file
+        let input_json = fs::read_to_string("input_fixed.json")
+            .expect("Failed to read input.json");
+        
 
-        // Parse JSON
-        let proof_json: Value = serde_json::from_str(&proof_str).expect("Failed to parse proof JSON");
-        let vkey_json: Value = serde_json::from_str(&vkey_str).expect("Failed to parse vkey JSON");
-        let public_inputs: Vec<String> = serde_json::from_str(&public_str).expect("Failed to parse public inputs JSON");
+        // Convert the input to a C string
+        let c_input: CString = CString::new(input_json)
+            .expect("Failed to create CString from input");
+        
+        // Call the verify function
+        let result_ptr: *const i8 = verify(c_input.as_ptr());
+        
+        // Convert the result back to a Rust string
+        let result = unsafe {
+            CStr::from_ptr(result_ptr)
+                .to_string_lossy()
+                .into_owned()
+        };
 
-        // Create the complete input JSON
-        let input = json!({
-            "proof": proof_json,
-            "vkey": vkey_json,
-            "public_inputs": public_inputs,
-            "curve_type": curve_type
-        });
-
-        input.to_string()
+        println!("\nOutput JSON:");
+        println!("{}", result);
+        
+        // Parse the output to make it pretty (optional)
+        if let Ok(output_json) = serde_json::from_str::<serde_json::Value>(&result) {
+            println!("\nFormatted Output:");
+            println!("{}", serde_json::to_string_pretty(&output_json).unwrap());
+        }
     }
 
     #[test]
-    fn test_valid_bn_proof() {
-        let input = create_verification_input(
-            "circuit/Multiplication/proof_uncompressed.json",
-            "circuit/Multiplication/vkey_uncompressed.json",
-            "circuit/Multiplication/public.json",
-            "bn",
-        );
+    fn test_keccak_function() {
+        // Read the test input file
+        let input_json = fs::read_to_string("input_fixed.json")
+            .expect("Failed to read input_fixed.json");
 
-        let c_input = std::ffi::CString::new(input).unwrap();
-        let result = verify(c_input.as_ptr());
-        assert_eq!(result, 1, "Verification should succeed with valid proof");
-    }
+        // Convert input to C string
+        let c_input = CString::new(input_json)
+            .expect("Failed to create CString from input");
+        
+        // Call the keccak function
+        let result_ptr = keccak(c_input.as_ptr());
+        
+        // Convert result back to Rust string
+        let result = unsafe {
+            CStr::from_ptr(result_ptr)
+                .to_string_lossy()
+                .into_owned()
+        };
 
-    #[test]
-    fn test_invalid_bn_proof() {
-        // Create a modified version of public.json with wrong input
-        let invalid_input = json!(["999"]).to_string();
-        let invalid_path = "circuit/Multiplication/invalid_public.json";
-        std::fs::write(invalid_path, invalid_input).unwrap();
+        // Parse the result
+        let result_json: serde_json::Value = serde_json::from_str(&result)
+            .expect("Failed to parse result JSON");
 
-        let input = create_verification_input(
-            "circuit/Multiplication/proof_uncompressed.json",
-            "circuit/Multiplication/vkey_uncompressed.json",
-            invalid_path,
-            "bn",
-        );
-
-        let c_input = std::ffi::CString::new(input).unwrap();
-        let result = verify(c_input.as_ptr());
-        assert_eq!(
-            result, 0,
-            "Verification should fail with invalid public input"
-        );
-        // Cleanup
-        std::fs::remove_file(invalid_path).unwrap();
+        // Verify the hash exists and is correctly formatted
+        let hash = result_json["hash"].as_str().expect("Hash not found in result");
+        assert!(hash.starts_with("0x"), "Hash should start with 0x");
+        assert_eq!(hash.len(), 66, "Hash should be 32 bytes (64 hex chars) plus 0x prefix");
+        
+        println!("Keccak hash of journal bytes: {}", hash);
     }
 }

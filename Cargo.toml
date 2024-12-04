@@ -8,20 +8,20 @@ name = "zkp"
 crate-type = ["staticlib"]
 
 [dependencies]
+alloy-primitives = { version = "0.8", default-features = false }
+alloy-sol-types = { version = "0.8", default-features = false }
+
+risc0-zkvm = { version = "1.1.2", default-features = false }
+risc0-steel = { git = "https://github.com/risc0/risc0-ethereum", branch = "release-1.1", default-features = false }
+
+
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-pairing_ce = { version = "=0.30", git="https://github.com/matter-labs/zksync-crypto.git", package = "zksync_pairing" }
 
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
-	"derive",
-] }
-
-[features]
-default = ["std"]
-std = [
-    "codec/std",
-]
+[dev-dependencies]
+rand = "0.8"
+subtle = "2.2.1"
 
 [profile.release]
 debug = true

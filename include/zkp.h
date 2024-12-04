@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-int32_t verify(const char *input_ptr);
+const char *keccak(const char *input_ptr);
+
+const char *verify(const char *input_ptr);
 
 #endif  /* ZKP_H */

@@ -12,11 +12,6 @@ rustflags = [
     "--cfg=web_sys_unstable_apis",
 ]
 
-[target.wasm64-unknown-unknown]
-rustflags = [
-    "--cfg=web_sys_unstable_apis",
-]
-
 [target.wasm32-unknown-emscripten]
 rustflags = [
     "--cfg=web_sys_unstable_apis",
