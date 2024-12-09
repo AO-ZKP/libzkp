@@ -6,7 +6,7 @@ mkdir -p bin include pkg
 #RUSTFLAGS="--cfg=web_sys_unstable_apis -Z wasm-c-abi=spec" \
 #cargo +nightly build -Zbuild-std=std,panic_abort --target=wasm32-wasip1 --release -Zbuild-std-features=panic_immediate_abort
 
-cargo build --release
+cargo build --release --no-default-features
 
 #wasm-opt target/wasm32-wasip1/release/zkp.wasm -O4 -o target/wasm32-wasip1/release/zkp.wasm
 #cargo build --target=wasm32-wasip1 --release
@@ -26,8 +26,7 @@ rustup run nightly cbindgen  --crate zkp --output include/zkp.h # --config cbind
 
 
 
-#cp target/wasm32-wasip1/release/*.wasm ./bin
-cp target/wasm32-wasip1/release/*.a ./bin
+cp target/wasm64-unknown-unknown/release/*.a ./bin
 
 #node --experimental-wasm-memory64 index.js
 

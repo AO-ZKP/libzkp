@@ -8,8 +8,40 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+/**
+ * Calculates the keccak256 hash of journal fields
+ *
+ * # Safety
+ *
+ * This function handles raw pointers and assumes the input_ptr is valid and points to properly formatted JSON data.
+ * Caller must ensure the pointer is valid and the memory it points to remains valid for the duration of the call.
+ *
+ * # Arguments
+ *
+ * * `input_ptr` - Pointer to null-terminated string containing JSON input
+ *
+ * # Returns
+ *
+ * Returns a pointer to a null-terminated string containing JSON with the calculated hash or error message
+ */
 const char *keccak(const char *input_ptr);
 
+/**
+ * Verifies a zero-knowledge proof and associated data
+ *
+ * # Safety
+ *
+ * This function handles raw pointers and assumes the input_ptr is valid and points to properly formatted JSON data.
+ * Caller must ensure the pointer is valid and the memory it points to remains valid for the duration of the call.
+ *
+ * # Arguments
+ *
+ * * `input_ptr` - Pointer to null-terminated string containing JSON input
+ *
+ * # Returns
+ *
+ * Returns a pointer to a null-terminated string containing JSON with verification results
+ */
 const char *verify(const char *input_ptr);
 
 #endif  /* ZKP_H */
