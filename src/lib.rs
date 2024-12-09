@@ -1,5 +1,5 @@
 //! ZKP Library for RISC Zero Verification
-//! 
+//!
 //! This library provides functionality for verifying zero-knowledge proofs
 //! and handling blockchain commitments in a no_std environment.
 //! It includes capabilities for keccak hashing and proof verification
@@ -8,14 +8,20 @@
 #![no_std]
 extern crate alloc;
 
-use alloc::{string::{String, ToString}, vec::Vec};
 use alloc::ffi::CString;
-use core::{ffi::{c_char, CStr}, convert::AsRef};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+use alloy_primitives::{aliases::U240, hex, keccak256, B256, U256};
 use alloy_sol_types::{sol, SolValue};
-use alloy_primitives::{keccak256, U256, hex, B256, aliases::U240};
+use core::{
+    convert::AsRef,
+    ffi::{c_char, CStr},
+};
 use risc0_steel::Commitment;
-use risc0_zkvm::{Receipt, sha::Digest};
-use serde::{Serialize, Deserialize};
+use risc0_zkvm::{sha::Digest, Receipt};
+use serde::{Deserialize, Serialize};
 
 // Define Solidity-compatible structures using the sol! macro
 sol! {
@@ -52,8 +58,7 @@ struct Input {
 
 /// Output structure containing verification results
 /// Used to return the status and details of verification
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Output {
     /// Optional error message if verification fails
     error: Option<String>,
@@ -87,18 +92,18 @@ impl Output {
 }
 
 /// Calculates the keccak256 hash of journal fields
-/// 
+///
 /// # Safety
-/// 
+///
 /// This function handles raw pointers and assumes the input_ptr is valid and points to properly formatted JSON data.
 /// Caller must ensure the pointer is valid and the memory it points to remains valid for the duration of the call.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `input_ptr` - Pointer to null-terminated string containing JSON input
-/// 
+///
 /// # Returns
-/// 
+///
 /// Returns a pointer to a null-terminated string containing JSON with the calculated hash or error message
 #[no_mangle]
 pub extern "C" fn keccak(input_ptr: *const c_char) -> *const c_char {
@@ -123,11 +128,13 @@ pub extern "C" fn keccak(input_ptr: *const c_char) -> *const c_char {
 
     // Get journal bytes from receipt
     let journal_bytes: &Vec<u8> = &input.receipt.journal.bytes;
-    
+
     // Decode journal data
     let journal: Journal = match Journal::abi_decode(journal_bytes, true) {
         Ok(j) => j,
-        Err(_) => return create_error_response("Invalid journal data: Failed to decode journal bytes"),
+        Err(_) => {
+            return create_error_response("Invalid journal data: Failed to decode journal bytes")
+        }
     };
 
     // Create hash fields structure with selected fields
@@ -142,7 +149,7 @@ pub extern "C" fn keccak(input_ptr: *const c_char) -> *const c_char {
     let encoded_fields = hash_fields.abi_encode();
     let hash: B256 = keccak256(&encoded_fields);
     let hash_hex = alloc::format!("0x{}", hex::encode(hash));
-    
+
     // Create response JSON
     let response = serde_json::json!({
         "error": String::new(),
@@ -156,13 +163,13 @@ pub extern "C" fn keccak(input_ptr: *const c_char) -> *const c_char {
 }
 
 /// Creates an error response JSON string as a C string
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `msg` - The error message to include in the response
-/// 
+///
 /// # Returns
-/// 
+///
 /// Returns a pointer to a null-terminated string containing JSON error response
 fn create_error_response(msg: &str) -> *const c_char {
     let error_json = serde_json::json!({
@@ -175,18 +182,18 @@ fn create_error_response(msg: &str) -> *const c_char {
 }
 
 /// Verifies a zero-knowledge proof and associated data
-/// 
+///
 /// # Safety
-/// 
+///
 /// This function handles raw pointers and assumes the input_ptr is valid and points to properly formatted JSON data.
 /// Caller must ensure the pointer is valid and the memory it points to remains valid for the duration of the call.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `input_ptr` - Pointer to null-terminated string containing JSON input
-/// 
+///
 /// # Returns
-/// 
+///
 /// Returns a pointer to a null-terminated string containing JSON with verification results
 #[no_mangle]
 pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
@@ -199,7 +206,9 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
     let c_str = unsafe {
         match CStr::from_ptr(input_ptr).to_str() {
             Ok(s) => s,
-            Err(_) => return create_response(&Output::failure("Failed to decode input as UTF-8 string")),
+            Err(_) => {
+                return create_response(&Output::failure("Failed to decode input as UTF-8 string"))
+            }
         }
     };
 
@@ -215,7 +224,9 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
     let image_id: Digest = match hex::decode(&input.imageid[2..]) {
         Ok(bytes) => match Digest::try_from(bytes.as_slice()) {
             Ok(digest) => digest,
-            Err(_) => return create_response(&Output::failure("Failed to create digest from image ID")),
+            Err(_) => {
+                return create_response(&Output::failure("Failed to create digest from image ID"))
+            }
         },
         Err(_) => return create_response(&Output::failure("Failed to decode hex image ID")),
     };
@@ -233,7 +244,9 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
     let does_hash_match: bool = nullifier == withdraw_hash;
 
     if !does_hash_match {
-        return create_response(&Output::failure("Nullifier verification failed: Hash mismatch"));
+        return create_response(&Output::failure(
+            "Nullifier verification failed: Hash mismatch",
+        ));
     }
 
     // Verify the ZK proof
@@ -244,9 +257,10 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
     // Extract and verify commitment details
     let commitment_id: alloy_primitives::Uint<256, 4> = journal.commitment.id;
     let id_mask: alloy_primitives::Uint<256, 4> = U256::from_str_radix(
-        "0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 
-        16
-    ).unwrap();
+        "0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        16,
+    )
+    .unwrap();
 
     // Extract version and block number
     let version: u16 = ((commitment_id >> 240u32).as_limbs()[0] & 0xFFFF) as u16;
@@ -275,13 +289,13 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
 }
 
 /// Creates a JSON response string as a C string from an Output struct
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `output` - The Output struct to convert to JSON
-/// 
+///
 /// # Returns
-/// 
+///
 /// Returns a pointer to a null-terminated string containing JSON response
 fn create_response(output: &Output) -> *const c_char {
     let json = serde_json::to_string(output).unwrap();
@@ -293,7 +307,7 @@ fn create_response(output: &Output) -> *const c_char {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     // Enable std features only for tests
     extern crate std;
     use std::fs;
@@ -302,19 +316,14 @@ mod tests {
     /// Tests the verify function with sample input
     #[test]
     fn test_verify_function() {
-        let input_json = fs::read_to_string("input_fixed.json")
-            .expect("Failed to read input.json");
-        
-        let c_input: CString = CString::new(input_json)
-            .expect("Failed to create CString from input");
-        
+        let input_json = fs::read_to_string("input_fixed.json").expect("Failed to read input.json");
+
+        let c_input: CString =
+            CString::new(input_json).expect("Failed to create CString from input");
+
         let result_ptr: *const i8 = verify(c_input.as_ptr());
-        
-        let result = unsafe {
-            CStr::from_ptr(result_ptr)
-                .to_string_lossy()
-                .into_owned()
-        };
+
+        let result = unsafe { CStr::from_ptr(result_ptr).to_string_lossy().into_owned() };
 
         if let Ok(output_json) = serde_json::from_str::<serde_json::Value>(&result) {
             println!("\nFormatted Output:");
@@ -325,25 +334,26 @@ mod tests {
     /// Tests the keccak function with sample input
     #[test]
     fn test_keccak_function() {
-        let input_json = fs::read_to_string("input_fixed.json")
-            .expect("Failed to read input_fixed.json");
+        let input_json =
+            fs::read_to_string("input_fixed.json").expect("Failed to read input_fixed.json");
 
-        let c_input = CString::new(input_json)
-            .expect("Failed to create CString from input");
-        
+        let c_input = CString::new(input_json).expect("Failed to create CString from input");
+
         let result_ptr = keccak(c_input.as_ptr());
-        
-        let result = unsafe {
-            CStr::from_ptr(result_ptr)
-                .to_string_lossy()
-                .into_owned()
-        };
 
-        let result_json: serde_json::Value = serde_json::from_str(&result)
-            .expect("Failed to parse result JSON");
+        let result = unsafe { CStr::from_ptr(result_ptr).to_string_lossy().into_owned() };
 
-        let hash = result_json["hash"].as_str().expect("Hash not found in result");
+        let result_json: serde_json::Value =
+            serde_json::from_str(&result).expect("Failed to parse result JSON");
+
+        let hash = result_json["hash"]
+            .as_str()
+            .expect("Hash not found in result");
         assert!(hash.starts_with("0x"), "Hash should start with 0x");
-        assert_eq!(hash.len(), 66, "Hash should be 32 bytes (64 hex chars) plus 0x prefix");
+        assert_eq!(
+            hash.len(),
+            66,
+            "Hash should be 32 bytes (64 hex chars) plus 0x prefix"
+        );
     }
 }
