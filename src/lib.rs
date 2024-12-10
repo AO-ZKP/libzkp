@@ -1,10 +1,14 @@
 #![no_std]
 
+#[cfg(test)]
+extern crate std;
+
 extern crate alloc;
 
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::ffi::{c_char, CStr};
+use alloc::string::ToString;
 
 pub mod adapter;
 pub mod verifier_bn;
@@ -12,9 +16,6 @@ pub mod verifier_bls;
 
 use crate::adapter::types::{ProofStr, VkeyStr};
 use serde_json::Value;
-
-#[cfg(not(test))]
-use alloc::string::ToString;
 
 fn verify_internal(
     proof: ProofStr,
@@ -158,6 +159,7 @@ fn extract_ic_array(obj: &Value) -> Result<Vec<Vec<u8>>, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::ffi::CString;
     use serde_json::json;
     use std::fs;
 
@@ -197,7 +199,7 @@ mod tests {
             "bn",
         );
 
-        let c_input = std::ffi::CString::new(input).unwrap();
+        let c_input = CString::new(input).unwrap();
         let result = verify(c_input.as_ptr());
         assert_eq!(result, 1, "Verification should succeed with valid proof");
     }
@@ -207,7 +209,7 @@ mod tests {
         // Create a modified version of public.json with wrong input
         let invalid_input = json!(["999"]).to_string();
         let invalid_path = "circuit/Multiplication/invalid_public.json";
-        std::fs::write(invalid_path, invalid_input).unwrap();
+        fs::write(invalid_path, invalid_input).unwrap();
 
         let input = create_verification_input(
             "circuit/Multiplication/proof_uncompressed.json",
@@ -216,13 +218,13 @@ mod tests {
             "bn",
         );
 
-        let c_input = std::ffi::CString::new(input).unwrap();
+        let c_input = CString::new(input).unwrap();
         let result = verify(c_input.as_ptr());
         assert_eq!(
             result, 0,
             "Verification should fail with invalid public input"
         );
         // Cleanup
-        std::fs::remove_file(invalid_path).unwrap();
+        fs::remove_file(invalid_path).unwrap();
     }
 }
