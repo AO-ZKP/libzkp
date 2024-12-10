@@ -1,5 +1,6 @@
 use super::{ProofStr, VkeyStr};
 use crate::verifier_bls::{Proof, VerifyingKey};
+use alloc::vec::Vec;
 use pairing_ce::bls12_381::{G1Affine, G1Uncompressed, G2Affine, G2Uncompressed};
 use pairing_ce::{CurveAffine, EncodedPoint, Engine};
 

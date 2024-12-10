@@ -1,11 +1,9 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
+use alloc::vec::Vec;
 use pairing_ce::{CurveAffine, Engine, GenericCurveProjective};
 use pairing_ce::ff::PrimeField;
 use codec::{Encode, Decode};
-use alloc::vec::Vec;
-use core::prelude::v1::*;
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, Default, Eq)]

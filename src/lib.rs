@@ -1,10 +1,20 @@
+#![no_std]
+
+extern crate alloc;
+
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::ffi::{c_char, CStr};
+
 pub mod adapter;
 pub mod verifier_bn;
 pub mod verifier_bls;
 
 use crate::adapter::types::{ProofStr, VkeyStr};
 use serde_json::Value;
-use core::ffi::{c_char, CStr};
+
+#[cfg(not(test))]
+use alloc::string::ToString;
 
 fn verify_internal(
     proof: ProofStr,

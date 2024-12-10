@@ -1,8 +1,9 @@
+extern crate alloc;
+
+use alloc::vec::Vec;
 use pairing_ce::{CurveAffine, Engine, GenericCurveProjective};
 use codec::{ Encode, Decode };
-
 use pairing_ce::ff::PrimeField;
-
 
 #[derive(Clone, Encode, Decode, Default, Eq)]
 pub struct Proof<E: Engine> {
@@ -18,7 +19,6 @@ impl<E: Engine> PartialEq for Proof<E> {
         self.c == other.c
     }
 }
-
 
 #[derive(Clone)]
 pub struct VerifyingKey<E: Engine> {
@@ -48,7 +48,6 @@ pub struct VerifyingKey<E: Engine> {
     pub ic: Vec<E::G1Affine>
 }
 
-
 impl<E: Engine> PartialEq for VerifyingKey<E> {
     fn eq(&self, other: &Self) -> bool {
         self.alpha_g1 == other.alpha_g1 &&
@@ -72,7 +71,6 @@ pub struct PreparedVerifyingKey<E: Engine> {
     ic: Vec<E::G1Affine>
 }
 
-
 /// This is an error that could occur during circuit synthesis contexts,
 /// such as CRS generation, proving or verification.
 #[derive(Debug)]
@@ -85,9 +83,9 @@ pub enum SynthesisError {
     Unsatisfiable,
     /// During synthesis, our polynomials ended up being too high of degree
     PolynomialDegreeTooLarge,
-    /// During proof generation, we encountered an identity in the CRS
+    /// During synthesis, we encountered an identity in the CRS
     UnexpectedIdentity,
-    /// During proof generation, we encountered an I/O error with the CRS
+    /// During synthesis, we encountered an I/O error with the CRS
     IoError,
     /// During verification, our verifying key was malformed.
     MalformedVerifyingKey,
