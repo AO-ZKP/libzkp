@@ -20,7 +20,7 @@ rustflags = [
 [target.wasm64-unknown-unknown]
 rustflags = [
     "--cfg=web_sys_unstable_apis",
-    "panic=abort"
+    "-C", "panic=abort"
 ]
 
 
