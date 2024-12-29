@@ -392,42 +392,40 @@ mod tests {
             "Hash should be 32 bytes (64 hex chars) plus 0x prefix"
         );
     }
-
+    
     #[test]
-    fn test_arweave_to_ethereum_conversion() {
-        // Test arweave address
+    fn test_arweave_address_conversion() {
+        use core::str::FromStr;
+        
+        // Test values
         let arweave_addr = "pG8tOsUrlvxgHAH7FXBXn8chb8FW5ZXOVKRyVF1wr2o";
-        
-        // Expected ethereum address (without 0x prefix)
-        let expected_eth = "1570579fc7216fc156e595ce54a472545d70af6a";
+        let expected_eth_addr = "0x1570579fc7216fc156e595ce54a472545d70af6a";
+        let expected_uint = U256::from_str("122394122787998446994346509740208613265780027242").unwrap();
 
-        // Convert arweave to ethereum address
+        // Test Arweave to Ethereum address conversion
         let eth_address = arweave_to_ethereum(arweave_addr).unwrap();
-        
-        // Convert to hex string for comparison
-        let actual_eth = hex::encode(eth_address.as_slice());
-        
-        // Compare
-        assert_eq!(actual_eth, expected_eth, "Ethereum address mismatch");
-        
-        // Now test conversion to U256
+        assert_eq!(
+            format!("0x{}", hex::encode(eth_address.as_slice())),
+            expected_eth_addr,
+            "Ethereum address mismatch"
+        );
+
+        // Test address to uint256 conversion
         let eth_as_uint = U256::from_be_bytes({
             let mut bytes = [0u8; 32];
             bytes[12..].copy_from_slice(eth_address.as_slice());
             bytes
         });
-        
-        // Print the U256 value in hex for verification
-        println!("U256 value: {:#x}", eth_as_uint);
-        
-        // Convert expected address to U256 for comparison
-        let expected_uint = U256::from_be_bytes({
-            let mut bytes = [0u8; 32];
-            let addr_bytes = hex::decode(expected_eth).unwrap();
-            bytes[12..].copy_from_slice(&addr_bytes);
-            bytes
-        });
-        
-        assert_eq!(eth_as_uint, expected_uint, "U256 conversion mismatch");
+
+        assert_eq!(
+            eth_as_uint,
+            expected_uint,
+            "uint256 value mismatch"
+        );
+
+        // Print values for verification
+        println!("Arweave address: {}", arweave_addr);
+        println!("Ethereum address: {}", expected_eth_addr);
+        println!("uint256 value: {}", eth_as_uint);
     }
 }
