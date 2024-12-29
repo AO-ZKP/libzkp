@@ -12,8 +12,9 @@ use alloc::ffi::CString;
 use alloc::{
     string::{String, ToString},
     vec::Vec,
+    format
 };
-use alloy_primitives::{aliases::U240, hex, keccak256, B256, U256};
+use alloy_primitives::{aliases::U240, hex, keccak256, B256, U256, Address};
 use alloy_sol_types::{sol, SolValue};
 use core::{
     convert::AsRef,
@@ -22,6 +23,8 @@ use core::{
 use risc0_steel::Commitment;
 use risc0_zkvm::{sha::Digest, Receipt};
 use serde::{Deserialize, Serialize};
+use base64::engine::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
 // Define Solidity-compatible structures using the sol! macro
 sol! {
@@ -181,6 +184,24 @@ fn create_error_response(msg: &str) -> *const c_char {
         .into_raw()
 }
 
+/// Convert Arweave address to Ethereum address
+fn arweave_to_ethereum(arweave_addr: &str) -> Result<Address, &'static str> {
+    // Decode base64 using URL_SAFE_NO_PAD engine
+    let bytes = match URL_SAFE_NO_PAD.decode(arweave_addr) {
+        Ok(b) => b,
+        Err(_) => return Err("Failed to decode base64url"),
+    };
+    
+    // Take last 20 bytes for Ethereum address
+    if bytes.len() < 20 {
+        return Err("Invalid Arweave address length");
+    }
+    let eth_bytes = &bytes[bytes.len() - 20..];
+    
+    // Convert to Address type
+    Ok(Address::from_slice(eth_bytes))
+}
+
 /// Verifies a zero-knowledge proof and associated data
 ///
 /// # Safety
@@ -238,14 +259,29 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
         Err(_) => return create_response(&Output::failure("Failed to decode journal data")),
     };
 
-    // Verify nullifier by comparing hashes
-    let nullifier: alloy_primitives::Uint<256, 4> = journal.nullifier;
-    let withdraw_hash: U256 = keccak256(withdraw.as_bytes()).into();
-    let does_hash_match: bool = nullifier == withdraw_hash;
+    // Convert Arweave withdraw address to Ethereum address
+    let eth_address = match arweave_to_ethereum(&withdraw) {
+        Ok(addr) => addr,
+        Err(e) => return create_response(&Output::failure(&format!(
+            "Failed to convert Arweave address: {}", e))),
+    };
 
-    if !does_hash_match {
+    // Convert Ethereum address to U256 for comparison
+    // This matches Solidity's uint256(uint160(address)) behavior
+    let eth_as_uint = U256::from_be_bytes({
+        let mut bytes = [0u8; 32];
+        // Copy address bytes to the end (right-aligned, just like uint160)
+        bytes[12..].copy_from_slice(eth_address.as_slice());
+        bytes
+    });
+
+    // Compare with nullifier
+    let nullifier: U256 = journal.nullifier;
+    let does_address_match = nullifier == eth_as_uint;
+
+    if !does_address_match {
         return create_response(&Output::failure(
-            "Nullifier verification failed: Hash mismatch",
+            "Nullifier verification failed: Address mismatch",
         ));
     }
 
@@ -355,5 +391,43 @@ mod tests {
             66,
             "Hash should be 32 bytes (64 hex chars) plus 0x prefix"
         );
+    }
+
+    #[test]
+    fn test_arweave_to_ethereum_conversion() {
+        // Test arweave address
+        let arweave_addr = "pG8tOsUrlvxgHAH7FXBXn8chb8FW5ZXOVKRyVF1wr2o";
+        
+        // Expected ethereum address (without 0x prefix)
+        let expected_eth = "1570579fc7216fc156e595ce54a472545d70af6a";
+
+        // Convert arweave to ethereum address
+        let eth_address = arweave_to_ethereum(arweave_addr).unwrap();
+        
+        // Convert to hex string for comparison
+        let actual_eth = hex::encode(eth_address.as_slice());
+        
+        // Compare
+        assert_eq!(actual_eth, expected_eth, "Ethereum address mismatch");
+        
+        // Now test conversion to U256
+        let eth_as_uint = U256::from_be_bytes({
+            let mut bytes = [0u8; 32];
+            bytes[12..].copy_from_slice(eth_address.as_slice());
+            bytes
+        });
+        
+        // Print the U256 value in hex for verification
+        println!("U256 value: {:#x}", eth_as_uint);
+        
+        // Convert expected address to U256 for comparison
+        let expected_uint = U256::from_be_bytes({
+            let mut bytes = [0u8; 32];
+            let addr_bytes = hex::decode(expected_eth).unwrap();
+            bytes[12..].copy_from_slice(&addr_bytes);
+            bytes
+        });
+        
+        assert_eq!(eth_as_uint, expected_uint, "U256 conversion mismatch");
     }
 }
