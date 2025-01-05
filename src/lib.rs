@@ -7,7 +7,7 @@
 
 #![no_std]
 extern crate alloc;
-
+use mlua::prelude::*;
 use alloc::ffi::CString;
 use alloc::{
     string::{String, ToString},
@@ -336,6 +336,48 @@ pub extern "C" fn verify(input_ptr: *const c_char) -> *const c_char {
 fn create_response(output: &Output) -> *const c_char {
     let json = serde_json::to_string(output).unwrap();
     CString::new(json).unwrap().into_raw()
+}
+
+
+#[no_mangle]
+pub unsafe extern "C" fn luaopen_groth16(lua: *mut mlua::lua_State) -> i32 {
+    let lua = mlua::Lua::init_from_ptr(lua);
+    
+    let exports = match lua.create_table() {
+        Ok(table) => table,
+        Err(_) => return 0,
+    };
+    
+    // Set up keccak function
+    match lua.create_function(|_, input: String| {
+        let c_str = CString::new(input).unwrap();
+        let result = unsafe { 
+            CStr::from_ptr(keccak(c_str.as_ptr()))
+                .to_string_lossy()
+                .into_owned() 
+        };
+        Ok(result)
+    }) {
+        Ok(func) => if exports.set("keccak", func).is_err() { return 0 },
+        Err(_) => return 0,
+    }
+
+    // Set up verify function
+    match lua.create_function(|_, input: String| {
+        let c_str = CString::new(input).unwrap();
+        let result = unsafe { 
+            CStr::from_ptr(verify(c_str.as_ptr()))
+                .to_string_lossy()
+                .into_owned() 
+        };
+        Ok(result)
+    }) {
+        Ok(func) => if exports.set("verify", func).is_err() { return 0 },
+        Err(_) => return 0,
+    }
+
+    // Push the table onto the Lua stack and return 1 to indicate one return value
+    exports.into_lua(&lua).map_or(0, |_| 1)
 }
 
 /// Test module that uses std features
